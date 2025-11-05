@@ -18,7 +18,6 @@ async function loadSettings() {
       showStatus('Set your API key in Settings', 'error');
     }
   } catch (error) {
-    console.error('Error loading settings:', error);
     showStatus('Error loading settings', 'error');
   }
 }
@@ -43,7 +42,6 @@ async function updateSetting(key: keyof ExtensionSettings, value: any) {
     await chrome.storage.local.set({ settings });
     await chrome.runtime.sendMessage({ type: 'SETTINGS_CHANGED' });
   } catch (error) {
-    console.error(`Error updating setting ${key}:`, error);
     showStatus('Error saving setting', 'error');
   }
 }
