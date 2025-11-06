@@ -194,7 +194,7 @@ async function callLLM(text: string, settings: ExtensionSettings, customPrompt?:
     : DEFAULT_PROMPTS.conciseAcademic;
 
   const requestBody = {
-    model: settings.model,
+    model: settings.selectedModel,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: text },
