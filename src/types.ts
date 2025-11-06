@@ -2,7 +2,8 @@ export interface ExtensionSettings {
   enabled: boolean;
   apiKey: string;
   apiEndpoint: string;
-  model: string;
+  models: string[];
+  selectedModel: string;
   toastDuration: number;
   toastPosition: 'bottom-left' | 'bottom-right';
   provider: 'openrouter' | 'custom';
@@ -29,7 +30,8 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   enabled: true,
   apiKey: '',
   apiEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
-  model: 'google/gemini-2.5-flash',
+  models: ['google/gemini-flash-1.5'],
+  selectedModel: 'google/gemini-flash-1.5',
   toastDuration: 20000,
   toastPosition: 'bottom-right',
   provider: 'openrouter',

@@ -4,7 +4,9 @@ const form = document.getElementById('settingsForm') as HTMLFormElement;
 const providerSelect = document.getElementById('provider') as HTMLSelectElement;
 const apiKeyInput = document.getElementById('apiKey') as HTMLInputElement;
 const apiEndpointInput = document.getElementById('apiEndpoint') as HTMLInputElement;
-const modelInput = document.getElementById('model') as HTMLInputElement;
+const modelSelect = document.getElementById('model') as HTMLSelectElement;
+const addModelBtn = document.getElementById('addModelBtn') as HTMLButtonElement;
+const deleteModelBtn = document.getElementById('deleteModelBtn') as HTMLButtonElement;
 const maxTokensInput = document.getElementById('maxTokens') as HTMLInputElement;
 const toastPositionSelect = document.getElementById('toastPosition') as HTMLSelectElement;
 const toastDurationInput = document.getElementById('toastDuration') as HTMLInputElement;
@@ -21,6 +23,19 @@ const ENDPOINTS = {
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
 };
 
+function updateModelDropdown(models: string[], selectedModel: string) {
+  modelSelect.innerHTML = '';
+  models.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model;
+    option.textContent = model;
+    if (model === selectedModel) {
+      option.selected = true;
+    }
+    modelSelect.appendChild(option);
+  });
+}
+
 async function loadSettings() {
   const result = await chrome.storage.local.get('settings');
   const settings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
@@ -28,7 +43,7 @@ async function loadSettings() {
   providerSelect.value = settings.provider;
   apiKeyInput.value = settings.apiKey;
   apiEndpointInput.value = settings.apiEndpoint;
-  modelInput.value = settings.model;
+  updateModelDropdown(settings.models, settings.selectedModel);
   maxTokensInput.value = settings.maxTokens.toString();
   toastPositionSelect.value = settings.toastPosition;
   toastDurationInput.value = (settings.toastDuration / 1000).toString();
@@ -58,6 +73,36 @@ discreteModeToggle.addEventListener('change', updateOpacityGroupVisibility);
 
 opacitySlider.addEventListener('input', () => {
   opacityValue.textContent = opacitySlider.value;
+});
+
+addModelBtn.addEventListener('click', async () => {
+  const newModel = prompt('Enter the new model name:');
+  if (newModel) {
+    const result = await chrome.storage.local.get('settings');
+    const settings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
+    if (!settings.models.includes(newModel)) {
+      settings.models.push(newModel);
+      settings.selectedModel = newModel;
+      await chrome.storage.local.set({ settings });
+      updateModelDropdown(settings.models, settings.selectedModel);
+    }
+  }
+});
+
+deleteModelBtn.addEventListener('click', async () => {
+  const selectedModel = modelSelect.value;
+  if (selectedModel) {
+    const result = await chrome.storage.local.get('settings');
+    const settings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
+    if (settings.models.length > 1) {
+      settings.models = settings.models.filter(m => m !== selectedModel);
+      settings.selectedModel = settings.models[0];
+      await chrome.storage.local.set({ settings });
+      updateModelDropdown(settings.models, settings.selectedModel);
+    } else {
+      showStatus('You cannot delete the last model.', 'error');
+    }
+  }
 });
 
 function updateOpacityGroupVisibility() {
@@ -94,13 +139,12 @@ form.addEventListener('submit', async (e) => {
   const result = await chrome.storage.local.get('settings');
   const existingSettings = result.settings || DEFAULT_SETTINGS;
 
-  const modelValue = modelInput.value.trim();
   const settings: ExtensionSettings = {
     ...existingSettings,
     provider: providerSelect.value as 'openrouter' | 'custom',
     apiKey: apiKeyInput.value.trim(),
     apiEndpoint: apiEndpointInput.value.trim(),
-     model: modelValue || DEFAULT_SETTINGS.model,
+    selectedModel: modelSelect.value,
     maxTokens: parseInt(maxTokensInput.value, 10),
     toastPosition: toastPositionSelect.value as 'bottom-left' | 'bottom-right',
     toastDuration: duration * 1000,
