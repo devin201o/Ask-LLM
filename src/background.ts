@@ -77,13 +77,11 @@ chrome.commands.onCommand.addListener(async (command) => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (!tab?.id || !tab.url) {
-      console.warn('Cannot run Ask LLM on a tab without ID or URL.', tab);
       return;
     }
 
     // Ensure the extension doesn't run on unsupported pages
     if (!/^(https?|file):/.test(tab.url)) {
-      console.log(`Cannot run Ask LLM on an unsupported page: ${tab.url}`);
       return;
     }
 
@@ -94,7 +92,6 @@ chrome.commands.onCommand.addListener(async (command) => {
       });
 
       if (chrome.runtime.lastError) {
-        console.error(`Error injecting script: ${chrome.runtime.lastError.message}`);
         return;
       }
 
@@ -126,7 +123,6 @@ chrome.commands.onCommand.addListener(async (command) => {
         });
       }
     } catch (e) {
-      console.error('Failed to execute script or process LLM request:', e);
        await ensureAndSendMessage(tab.id, {
          type: 'SHOW_TOAST',
          payload: { message: `An error occurred: ${String(e)}`, type: 'error' },
@@ -239,19 +235,16 @@ async function pingTab(tabId: number): Promise<boolean> {
   let timeout: NodeJS.Timeout;
   return new Promise((resolve) => {
     timeout = setTimeout(() => {
-      console.log(`Ping timeout for tab ${tabId}`);
       resolve(false);
     }, 250);
 
     chrome.tabs.sendMessage(tabId, { type: 'PING' }, (response) => {
       clearTimeout(timeout);
       if (chrome.runtime.lastError) {
-        console.log(`Ping failed for tab ${tabId}:`, chrome.runtime.lastError.message);
         resolve(false);
       } else if (response?.type === 'PONG') {
         resolve(true);
       } else {
-        console.warn(`Unexpected response to ping in tab ${tabId}:`, response);
         resolve(false);
       }
     });
@@ -264,10 +257,8 @@ async function reinjectContentScript(tabId: number): Promise<boolean> {
       target: { tabId },
       files: ['content.js'],
     });
-    console.log(`Successfully reinjected content script into tab ${tabId}`);
     return await pingTab(tabId);
   } catch (error) {
-    console.warn(`Failed to reinject content script into tab ${tabId}:`, error);
     return false;
   }
 }
@@ -277,7 +268,6 @@ async function ensureContentScript(tabId: number): Promise<boolean> {
   if (isAlive) {
     return true;
   }
-  console.log(`Content script in tab ${tabId} is not responding. Attempting to reinject.`);
   return await reinjectContentScript(tabId);
 }
 
@@ -302,7 +292,6 @@ export async function ensureAndSendMessage(tabId: number, message: any) {
   try {
     await chrome.tabs.sendMessage(tabId, message);
   } catch (error) {
-    console.warn(`sendMessage failed even after ensureContentScript for tab ${tabId}`, error);
     showRefreshNotification(tabId);
   }
 }
