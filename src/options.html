@@ -58,6 +58,19 @@
           />
           <small>Specify the model to use from OpenRouter, e.g., "Moogle/Gemini-10".</small>
         </div>
+
+        <div class="form-group">
+          <label for="maxTokens">Max Output Tokens</label>
+          <input
+            type="number"
+            id="maxTokens"
+            name="maxTokens"
+            min="50"
+            max="2000"
+            step="50"
+          />
+          <small>Max tokens for the LLM response (50-2000).</small>
+        </div>
       </section>
 
       <section class="section">
