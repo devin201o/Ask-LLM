@@ -221,6 +221,11 @@ async function createToast(options: ToastOptions, position: 'bottom-left' | 'bot
     .toast-error { border-left: 4px solid #ef4444; }
     .toast-info { border-left: 4px solid #3b82f6; }
     .toast-content { flex: 1; word-wrap: break-word; white-space: pre-wrap; overflow-y: auto; min-height: 0; }
+    .toast-content p { margin: 0 0 5px; padding: 0; }
+    .toast-content p:last-child { margin-bottom: 0; }
+    .toast-content ul, .toast-content ol { margin-block-start: 0.5em; margin-block-end: 0.5em; padding-inline-start: 20px; }
+    .toast-content li { margin-bottom: 0.2em; }
+    .toast-content h1, .toast-content h2, .toast-content h3, .toast-content h4, .toast-content h5, .toast-content h6 { margin-block-start: 0.5em; margin-block-end: 0.5em; font-size: 1em; font-weight: bold; }
     .toast-actions { display: flex; gap: 8px; flex-shrink: 0; }
     .toast-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 12px; transition: background 0.2s; }
     .toast-btn:hover { background: #f3f4f6; }
