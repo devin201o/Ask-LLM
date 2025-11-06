@@ -199,7 +199,7 @@ async function callLLM(text: string, settings: ExtensionSettings, customPrompt?:
       { role: 'system', content: systemPrompt },
       { role: 'user', content: text },
     ],
-    max_tokens: 500,
+    max_tokens: settings.maxTokens,
   };
 
   const response = await fetch(apiEndpoint, {

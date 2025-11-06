@@ -5,6 +5,7 @@ const providerSelect = document.getElementById('provider') as HTMLSelectElement;
 const apiKeyInput = document.getElementById('apiKey') as HTMLInputElement;
 const apiEndpointInput = document.getElementById('apiEndpoint') as HTMLInputElement;
 const modelInput = document.getElementById('model') as HTMLInputElement;
+const maxTokensInput = document.getElementById('maxTokens') as HTMLInputElement;
 const toastPositionSelect = document.getElementById('toastPosition') as HTMLSelectElement;
 const toastDurationInput = document.getElementById('toastDuration') as HTMLInputElement;
 const testBtn = document.getElementById('testBtn') as HTMLButtonElement;
@@ -28,6 +29,7 @@ async function loadSettings() {
   apiKeyInput.value = settings.apiKey;
   apiEndpointInput.value = settings.apiEndpoint;
   modelInput.value = settings.model;
+  maxTokensInput.value = settings.maxTokens.toString();
   toastPositionSelect.value = settings.toastPosition;
   toastDurationInput.value = (settings.toastDuration / 1000).toString();
   discreteModeToggle.checked = settings.discreteMode;
@@ -81,6 +83,12 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
+  const maxTokens = parseInt(maxTokensInput.value, 10);
+  if (isNaN(maxTokens) || maxTokens < 50 || maxTokens > 2000) {
+    showStatus('Invalid max tokens. Please enter a number between 50 and 2000.', 'error');
+    return;
+  }
+
   const selectedPromptMode = (document.querySelector('input[name="promptMode"]:checked') as HTMLInputElement).value as 'auto' | 'manual';
 
   const result = await chrome.storage.local.get('settings');
@@ -93,6 +101,7 @@ form.addEventListener('submit', async (e) => {
     apiKey: apiKeyInput.value.trim(),
     apiEndpoint: apiEndpointInput.value.trim(),
      model: modelValue || DEFAULT_SETTINGS.model,
+    maxTokens: parseInt(maxTokensInput.value, 10),
     toastPosition: toastPositionSelect.value as 'bottom-left' | 'bottom-right',
     toastDuration: duration * 1000,
     promptMode: selectedPromptMode,
