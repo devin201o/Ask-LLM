@@ -9,6 +9,7 @@ export interface ExtensionSettings {
   promptMode: 'auto' | 'manual';
   discreteMode: boolean;
   discreteModeOpacity: number;
+  renderMarkdown: boolean;
 }
 
 export interface LLMResponse {
@@ -35,4 +36,5 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   promptMode: 'auto',
   discreteMode: false,
   discreteModeOpacity: 0.85,
+  renderMarkdown: false,
 };

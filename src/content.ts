@@ -1,4 +1,6 @@
 import type { ToastOptions } from './types';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 // --- STATE ---
 let currentToast: HTMLDivElement | null = null;
@@ -159,10 +161,11 @@ async function showToast(options: ToastOptions) {
   const position = settings?.toastPosition || options.position || 'bottom-right';
   const discreteMode = settings?.discreteMode || false;
   const opacity = settings?.discreteModeOpacity || 1;
-  createToast(options, position, discreteMode, opacity);
+  const renderMarkdown = settings?.renderMarkdown || false;
+  await createToast(options, position, discreteMode, opacity, renderMarkdown);
 }
 
-function createToast(options: ToastOptions, position: 'bottom-left' | 'bottom-right', discreteMode: boolean, opacity: number) {
+async function createToast(options: ToastOptions, position: 'bottom-left' | 'bottom-right', discreteMode: boolean, opacity: number, renderMarkdown: boolean) {
   dismissToast();
   const { message, type, duration = 20000 } = options;
 
@@ -229,7 +232,12 @@ function createToast(options: ToastOptions, position: 'bottom-left' | 'bottom-ri
 
   const contentDiv = document.createElement('div');
   contentDiv.className = 'toast-content';
-  contentDiv.textContent = message;
+  if (renderMarkdown) {
+    const unsafeHtml = await marked(message);
+    contentDiv.innerHTML = DOMPurify.sanitize(unsafeHtml);
+  } else {
+    contentDiv.textContent = message;
+  }
 
   const actionsDiv = document.createElement('div');
   actionsDiv.className = 'toast-actions';

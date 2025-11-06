@@ -15,6 +15,7 @@ const discreteModeToggle = document.getElementById('discreteMode') as HTMLInputE
 const opacityGroup = document.getElementById('opacityGroup') as HTMLDivElement;
 const opacitySlider = document.getElementById('discreteModeOpacity') as HTMLInputElement;
 const opacityValue = document.getElementById('opacityValue') as HTMLSpanElement;
+const renderMarkdownToggle = document.getElementById('renderMarkdown') as HTMLInputElement;
 
 const ENDPOINTS = {
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
@@ -33,6 +34,7 @@ async function loadSettings() {
   discreteModeToggle.checked = settings.discreteMode;
   opacitySlider.value = settings.discreteModeOpacity.toString();
   opacityValue.textContent = settings.discreteModeOpacity.toString();
+  renderMarkdownToggle.checked = settings.renderMarkdown;
 
   promptModeRadios.forEach(radio => {
     if (radio.value === settings.promptMode) {
@@ -98,6 +100,7 @@ form.addEventListener('submit', async (e) => {
     promptMode: selectedPromptMode,
     discreteMode: discreteModeToggle.checked,
     discreteModeOpacity: parseFloat(opacitySlider.value),
+    renderMarkdown: renderMarkdownToggle.checked,
   };
 
   await chrome.storage.local.set({ settings });
