@@ -5,6 +5,7 @@ export interface ExtensionSettings {
   models: string[];
   selectedModel: string;
   toastDuration: number;
+  toastIndefinite: boolean;
   toastPosition: 'bottom-left' | 'bottom-right';
   provider: 'openrouter' | 'custom';
   promptMode: 'auto' | 'manual';
@@ -33,6 +34,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   models: ['google/gemini-2.5-flash'],
   selectedModel: 'google/gemini-2.5-flash',
   toastDuration: 20000,
+  toastIndefinite: false,
   toastPosition: 'bottom-right',
   provider: 'openrouter',
   promptMode: 'auto',
