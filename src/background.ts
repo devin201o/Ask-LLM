@@ -142,7 +142,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 // --- CORE LOGIC ---
-async function processLLMRequest(text: string, tabId: number, customPrompt?: string) {
+async function processLLMRequest(text: string, tabId: number, manualPrompt?: string) {
   const { settings } = await chrome.storage.local.get('settings');
   const currentSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
 
@@ -158,7 +158,7 @@ async function processLLMRequest(text: string, tabId: number, customPrompt?: str
   });
 
   try {
-    const response = await callLLM(text, currentSettings, customPrompt);
+    const response = await callLLM(text, currentSettings, manualPrompt);
     await ensureAndSendMessage(tabId, {
       type: 'SHOW_TOAST',
       payload: {
@@ -179,7 +179,7 @@ import { DEFAULT_PROMPTS } from './prompts';
 
 const MANUAL_MODE_PROMPT_APPENDIX = 'Please be concise, while still being clear and informative.';
 
-async function callLLM(text: string, settings: ExtensionSettings, customPrompt?: string): Promise<LLMResponse> {
+async function callLLM(text: string, settings: ExtensionSettings, manualPrompt?: string): Promise<LLMResponse> {
   const { apiKey, apiEndpoint } = settings;
 
   const headers = {
@@ -189,9 +189,15 @@ async function callLLM(text: string, settings: ExtensionSettings, customPrompt?:
     'X-Title': 'Ask LLM Extension',
   };
 
-  const systemPrompt = customPrompt
-    ? `${customPrompt} ${MANUAL_MODE_PROMPT_APPENDIX}`
-    : DEFAULT_PROMPTS.conciseAcademic;
+  let systemPrompt: string;
+
+  if (manualPrompt) {
+    systemPrompt = `${manualPrompt} ${MANUAL_MODE_PROMPT_APPENDIX}`;
+  } else if (settings.promptMode === 'custom') {
+    systemPrompt = settings.customPrompt;
+  } else {
+    systemPrompt = DEFAULT_PROMPTS.conciseAcademic;
+  }
 
   const requestBody = {
     model: settings.selectedModel,

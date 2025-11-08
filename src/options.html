@@ -109,6 +109,14 @@
               <input type="radio" name="promptMode" value="manual">
               Manual (ask for prompt each time)
             </label>
+            <label>
+              <input type="radio" name="promptMode" value="custom">
+              Custom (define your own prompt)
+            </label>
+          </div>
+          <div id="customPromptContainer" class="form-group" style="display: none;">
+            <label for="customPrompt">Custom Prompt</label>
+            <textarea id="customPrompt" name="customPrompt" rows="4" placeholder="e.g., Explain this to me like I'm five years old."></textarea>
           </div>
           <small>This setting can also be changed in the extension popup.</small>
         </div>

@@ -14,6 +14,8 @@ const testBtn = document.getElementById('testBtn') as HTMLButtonElement;
 const statusDiv = document.getElementById('status') as HTMLDivElement;
 const endpointGroup = document.getElementById('endpointGroup') as HTMLDivElement;
 const promptModeRadios = document.querySelectorAll<HTMLInputElement>('input[name="promptMode"]');
+const customPromptContainer = document.getElementById('customPromptContainer') as HTMLDivElement;
+const customPrompt = document.getElementById('customPrompt') as HTMLTextAreaElement;
 const discreteModeToggle = document.getElementById('discreteMode') as HTMLInputElement;
 const opacityGroup = document.getElementById('opacityGroup') as HTMLDivElement;
 const opacitySlider = document.getElementById('discreteModeOpacity') as HTMLInputElement;
@@ -57,8 +59,24 @@ async function loadSettings() {
     }
   });
 
+  customPrompt.value = settings.customPrompt;
+
   updateEndpointVisibility();
+  updateCustomPromptVisibility();
 }
+
+function updateCustomPromptVisibility() {
+  const selectedMode = (document.querySelector('input[name="promptMode"]:checked') as HTMLInputElement)?.value;
+  if (selectedMode === 'custom') {
+    customPromptContainer.style.display = 'block';
+  } else {
+    customPromptContainer.style.display = 'none';
+  }
+}
+
+promptModeRadios.forEach(radio => {
+  radio.addEventListener('change', updateCustomPromptVisibility);
+});
 
 providerSelect.addEventListener('change', () => {
   const provider = providerSelect.value as 'openrouter' | 'custom';
@@ -134,7 +152,7 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
-  const selectedPromptMode = (document.querySelector('input[name="promptMode"]:checked') as HTMLInputElement).value as 'auto' | 'manual';
+  const selectedPromptMode = (document.querySelector('input[name="promptMode"]:checked') as HTMLInputElement).value as 'auto' | 'manual' | 'custom';
 
   const result = await chrome.storage.local.get('settings');
   const existingSettings = result.settings || DEFAULT_SETTINGS;
@@ -149,6 +167,7 @@ form.addEventListener('submit', async (e) => {
     toastPosition: toastPositionSelect.value as 'bottom-left' | 'bottom-right',
     toastDuration: duration * 1000,
     promptMode: selectedPromptMode,
+    customPrompt: customPrompt.value.trim(),
     discreteMode: discreteModeToggle.checked,
     discreteModeOpacity: parseFloat(opacitySlider.value),
   };
