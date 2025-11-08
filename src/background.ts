@@ -164,7 +164,7 @@ async function processLLMRequest(text: string, tabId: number, customPrompt?: str
       payload: {
         message: response.content || 'No response received',
         type: response.success ? 'success' : 'error',
-        duration: currentSettings.toastDuration,
+        duration: currentSettings.toastIndefinite ? -1 : currentSettings.toastDuration,
       },
     });
   } catch (error) {

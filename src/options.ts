@@ -10,6 +10,7 @@ const deleteModelBtn = document.getElementById('deleteModelBtn') as HTMLButtonEl
 const maxTokensInput = document.getElementById('maxTokens') as HTMLInputElement;
 const toastPositionSelect = document.getElementById('toastPosition') as HTMLSelectElement;
 const toastDurationInput = document.getElementById('toastDuration') as HTMLInputElement;
+const toastIndefinite = document.getElementById('toastIndefinite') as HTMLInputElement;
 const testBtn = document.getElementById('testBtn') as HTMLButtonElement;
 const statusDiv = document.getElementById('status') as HTMLDivElement;
 const endpointGroup = document.getElementById('endpointGroup') as HTMLDivElement;
@@ -37,8 +38,14 @@ function updateModelDropdown(models: string[], selectedModel: string) {
 }
 
 async function loadSettings() {
-  const result = await chrome.storage.local.get('settings');
-  const settings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
+  let settings: ExtensionSettings = DEFAULT_SETTINGS;
+  try {
+    // This will fail in the test environment, and we'll proceed with defaults.
+    const result = await chrome.storage.local.get('settings');
+    settings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
+  } catch (error) {
+    console.warn('Could not load settings from chrome.storage, using defaults.');
+  }
 
   providerSelect.value = settings.provider;
   apiKeyInput.value = settings.apiKey;
@@ -47,6 +54,7 @@ async function loadSettings() {
   maxTokensInput.value = settings.maxTokens.toString();
   toastPositionSelect.value = settings.toastPosition;
   toastDurationInput.value = (settings.toastDuration / 1000).toString();
+  toastIndefinite.checked = settings.toastIndefinite;
   discreteModeToggle.checked = settings.discreteMode;
   opacitySlider.value = settings.discreteModeOpacity.toString();
   opacityValue.textContent = settings.discreteModeOpacity.toString();
@@ -58,6 +66,7 @@ async function loadSettings() {
   });
 
   updateEndpointVisibility();
+  updateToastDurationState();
 }
 
 providerSelect.addEventListener('change', () => {
@@ -68,6 +77,12 @@ providerSelect.addEventListener('change', () => {
   updateEndpointVisibility();
   updateOpacityGroupVisibility();
 });
+
+function updateToastDurationState() {
+  toastDurationInput.disabled = toastIndefinite.checked;
+}
+
+toastIndefinite.addEventListener('change', updateToastDurationState);
 
 discreteModeToggle.addEventListener('change', updateOpacityGroupVisibility);
 
@@ -148,6 +163,7 @@ form.addEventListener('submit', async (e) => {
     maxTokens: parseInt(maxTokensInput.value, 10),
     toastPosition: toastPositionSelect.value as 'bottom-left' | 'bottom-right',
     toastDuration: duration * 1000,
+    toastIndefinite: toastIndefinite.checked,
     promptMode: selectedPromptMode,
     discreteMode: discreteModeToggle.checked,
     discreteModeOpacity: parseFloat(opacitySlider.value),
