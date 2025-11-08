@@ -8,7 +8,8 @@ export interface ExtensionSettings {
   toastIndefinite: boolean;
   toastPosition: 'bottom-left' | 'bottom-right';
   provider: 'openrouter' | 'custom';
-  promptMode: 'auto' | 'manual';
+  promptMode: 'auto' | 'manual' | 'custom';
+  customPrompt: string;
   discreteMode: boolean;
   discreteModeOpacity: number;
   maxTokens: number;
@@ -38,6 +39,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   toastPosition: 'bottom-right',
   provider: 'openrouter',
   promptMode: 'auto',
+  customPrompt: 'You are a helpful assistant.',
   discreteMode: false,
   discreteModeOpacity: 0.85,
   maxTokens: 500,

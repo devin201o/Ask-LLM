@@ -4,6 +4,8 @@ const enabledToggle = document.getElementById('enabledToggle') as HTMLInputEleme
 const openOptionsBtn = document.getElementById('openOptions') as HTMLButtonElement;
 const statusDiv = document.getElementById('status') as HTMLDivElement;
 const promptModeRadios = document.querySelectorAll<HTMLInputElement>('input[name="promptMode"]');
+const customPromptContainer = document.getElementById('customPromptContainer') as HTMLDivElement;
+const customPrompt = document.getElementById('customPrompt') as HTMLTextAreaElement;
 
 // --- Functions ---
 
@@ -25,12 +27,24 @@ async function loadSettings() {
 
 function updateUI(settings: ExtensionSettings) {
   enabledToggle.checked = settings.enabled;
+  customPrompt.value = settings.customPrompt;
 
   promptModeRadios.forEach(radio => {
     if (radio.value === settings.promptMode) {
       radio.checked = true;
     }
   });
+
+  updateCustomPromptVisibility();
+}
+
+function updateCustomPromptVisibility() {
+  const selectedMode = (document.querySelector('input[name="promptMode"]:checked') as HTMLInputElement).value;
+  if (selectedMode === 'custom') {
+    customPromptContainer.style.display = 'block';
+  } else {
+    customPromptContainer.style.display = 'none';
+  }
 }
 
 async function updateSetting(key: keyof ExtensionSettings, value: any) {
@@ -66,9 +80,14 @@ enabledToggle.addEventListener('change', () => {
 
 promptModeRadios.forEach(radio => {
   radio.addEventListener('change', () => {
-    const selectedMode = (document.querySelector('input[name="promptMode"]:checked') as HTMLInputElement).value as 'auto' | 'manual';
+    const selectedMode = (document.querySelector('input[name="promptMode"]:checked') as HTMLInputElement).value as 'auto' | 'manual' | 'custom';
     updateSetting('promptMode', selectedMode);
+    updateCustomPromptVisibility();
   });
+});
+
+customPrompt.addEventListener('input', () => {
+  updateSetting('customPrompt', customPrompt.value);
 });
 
 openOptionsBtn.addEventListener('click', () => {
