@@ -23,6 +23,11 @@
       "matches": ["<all_urls>"],
       "js": ["content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["chrome-extension://*/pdf/viewer.html"],
+      "js": ["content.js"],
+      "all_frames": true
     }
   ],
   "action": {
@@ -55,7 +60,8 @@
         "*.js"
       ],
       "matches": [
-        "<all_urls>"
+        "<all_urls>",
+        "chrome-extension://*"
       ]
     }
   ]
