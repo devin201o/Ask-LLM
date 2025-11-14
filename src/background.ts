@@ -34,15 +34,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (
-    info.menuItemId !== CONTEXT_MENU_ID ||
-    !info.selectionText ||
-    !tab?.id ||
-    !tab.url
-  ) {
+  if (info.menuItemId !== CONTEXT_MENU_ID || !tab?.id || !tab.url) {
     return;
   }
 
+  // If no text is selected (which happens in PDF viewers),
+  // guide the user to copy text via the notification workflow.
+  if (!info.selectionText) {
+    await handlePdfInteraction(tab.id);
+    return;
+  }
 
   // Ensure the extension doesn't run on unsupported pages like chrome://
   if (!/^(https?|file):/.test(tab.url)) {
@@ -60,15 +61,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
+  const selectionText = info.selectionText;
+
   if (currentSettings.promptMode === 'manual') {
     await ensureAndSendMessage(tab.id, {
       type: 'SHOW_INPUT_BOX',
-      payload: {
-        selectionText: info.selectionText,
-      },
+      payload: { selectionText },
     });
   } else {
-    await processLLMRequest(info.selectionText, tab.id);
+    await processLLMRequest(selectionText, tab.id);
   }
 });
 
@@ -95,6 +96,9 @@ chrome.commands.onCommand.addListener(async (command) => {
 
       if (chrome.runtime.lastError) {
         console.error(`Error injecting script: ${chrome.runtime.lastError.message}`);
+        // If script injection fails, it might be a protected page.
+        // Fallback to the clipboard method.
+        await handlePdfInteraction(tab.id);
         return;
       }
 
@@ -104,11 +108,11 @@ chrome.commands.onCommand.addListener(async (command) => {
         const currentSettings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
 
         if (!currentSettings.apiKey) {
-           await ensureAndSendMessage(tab.id, {
-             type: 'SHOW_TOAST',
-             payload: { message: 'Please set your API key in the extension options.', type: 'error' },
-           });
-           return;
+          await ensureAndSendMessage(tab.id, {
+            type: 'SHOW_TOAST',
+            payload: { message: 'Please set your API key in the extension options.', type: 'error' },
+          });
+          return;
         }
 
         if (currentSettings.promptMode === 'manual') {
@@ -120,17 +124,14 @@ chrome.commands.onCommand.addListener(async (command) => {
           await processLLMRequest(selectionText, tab.id);
         }
       } else {
-        await ensureAndSendMessage(tab.id, {
-          type: 'SHOW_TOAST',
-          payload: { message: 'No text selected.', type: 'info', duration: 2000 },
-        });
+        // No text was selected, or selection could not be read.
+        // Guide the user to the clipboard workflow.
+        await handlePdfInteraction(tab.id);
       }
     } catch (e) {
       console.error('Failed to execute script or process LLM request:', e);
-       await ensureAndSendMessage(tab.id, {
-         type: 'SHOW_TOAST',
-         payload: { message: `An error occurred: ${String(e)}`, type: 'error' },
-       });
+      // Fallback for other errors during script execution.
+      await handlePdfInteraction(tab.id);
     }
   }
 });
@@ -140,6 +141,69 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     updateContextMenu();
   }
 });
+
+chrome.notifications.onClicked.addListener(async (notificationId) => {
+  if (typeof notificationId === 'string' && notificationId.startsWith('pdf-clipboard-notification-')) {
+    const tabId = parseInt(notificationId.replace('pdf-clipboard-notification-', ''), 10);
+    if (isNaN(tabId)) {
+      return;
+    }
+
+    try {
+      const clipboardText = await readClipboardFromOffscreenDocument();
+
+      if (clipboardText) {
+        await processLLMRequest(clipboardText, tabId);
+      } else {
+        await ensureAndSendMessage(tabId, {
+          type: 'SHOW_TOAST',
+          payload: { message: 'Clipboard is empty. Please copy some text first.', type: 'error' },
+        });
+      }
+    } catch (error) {
+      console.error('Failed to read from clipboard:', error);
+      await ensureAndSendMessage(tabId, {
+        type: 'SHOW_TOAST',
+        payload: { message: `Could not read from clipboard: ${String(error)}`, type: 'error' },
+      });
+    } finally {
+      chrome.notifications.clear(notificationId);
+    }
+  }
+});
+
+async function readClipboardFromOffscreenDocument(): Promise<string> {
+  await chrome.offscreen.createDocument({
+    url: 'offscreen.html',
+    reasons: [chrome.offscreen.Reason.CLIPBOARD],
+    justification: 'Reading text from the clipboard',
+  });
+
+  const response = await chrome.runtime.sendMessage({ type: 'read-clipboard' });
+
+  await chrome.offscreen.closeDocument();
+
+  if (response.success) {
+    return response.text;
+  } else {
+    throw new Error(response.error || 'Failed to read clipboard from offscreen document.');
+  }
+}
+
+async function handlePdfInteraction(tabId: number | undefined) {
+  if (!tabId) return;
+
+  const NOTIFICATION_ID = `pdf-clipboard-notification-${tabId}`;
+
+  chrome.notifications.create(NOTIFICATION_ID, {
+    type: 'basic',
+    iconUrl: 'icons/icon128.png',
+    title: 'Ask LLM for PDFs',
+    message: 'Please copy the text you want to ask about, then click this notification to proceed.',
+    priority: 2,
+    requireInteraction: true,
+  });
+}
 
 // --- CORE LOGIC ---
 async function processLLMRequest(text: string, tabId: number, manualPrompt?: string) {
