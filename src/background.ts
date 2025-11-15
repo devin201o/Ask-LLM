@@ -98,32 +98,36 @@ chrome.commands.onCommand.addListener(async (command) => {
         return;
       }
 
-      if (injectionResults && injectionResults.length > 0 && injectionResults[0].result) {
-        const selectionText = injectionResults[0].result;
-        const { settings } = await chrome.storage.local.get('settings');
-        const currentSettings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+      // We can get an empty result, which is fine.
+      const selectionText = (injectionResults && injectionResults.length > 0 ? injectionResults[0].result : '') || '';
 
-        if (!currentSettings.apiKey) {
-           await ensureAndSendMessage(tab.id, {
-             type: 'SHOW_TOAST',
-             payload: { message: 'Please set your API key in the extension options.', type: 'error' },
-           });
-           return;
-        }
+      const { settings } = await chrome.storage.local.get('settings');
+      const currentSettings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
 
-        if (currentSettings.promptMode === 'manual') {
-          await ensureAndSendMessage(tab.id, {
-            type: 'SHOW_INPUT_BOX',
-            payload: { selectionText },
-          });
-        } else {
-          await processLLMRequest(selectionText, tab.id);
-        }
-      } else {
+      if (!currentSettings.apiKey) {
+         await ensureAndSendMessage(tab.id, {
+           type: 'SHOW_TOAST',
+           payload: { message: 'Please set your API key in the extension options.', type: 'error' },
+         });
+         return;
+      }
+
+      if (currentSettings.promptMode === 'manual') {
+        // In manual mode, always show the input box, even if there's no selection.
         await ensureAndSendMessage(tab.id, {
-          type: 'SHOW_TOAST',
-          payload: { message: 'No text selected.', type: 'info', duration: 2000 },
+          type: 'SHOW_INPUT_BOX',
+          payload: { selectionText }, // selectionText can be ''
         });
+      } else {
+        // In other modes (auto, custom), require a text selection.
+        if (selectionText) {
+          await processLLMRequest(selectionText, tab.id);
+        } else {
+          await ensureAndSendMessage(tab.id, {
+            type: 'SHOW_TOAST',
+            payload: { message: 'No text selected.', type: 'info', duration: 2000 },
+          });
+        }
       }
     } catch (e) {
       console.error('Failed to execute script or process LLM request:', e);

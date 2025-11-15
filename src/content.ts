@@ -62,14 +62,16 @@ function showInputBox(selectionText: string) {
   inputBox.appendChild(helpText);
   shadowRoot.appendChild(inputBox);
   
-   // Position the box near the selection
+  // Position the box.
   const selection = window.getSelection();
   let rect;
   if (selection && selection.rangeCount > 0) {
     rect = selection.getRangeAt(0).getBoundingClientRect();
   }
 
-  if (rect) {
+  // A rect with a width of 0 means there's no text selected (it's just a cursor).
+  if (rect && rect.width > 0) {
+    // If text is selected, position the box near it.
     const boxHeight = inputBox.offsetHeight;
     const boxWidth = 300; // As defined in input-box.css
 
@@ -97,10 +99,10 @@ function showInputBox(selectionText: string) {
     inputBox.style.left = `${left}px`;
     inputBox.style.top = `${top}px`;
   } else {
-    // Fallback for safety, though should not be common
+    // If no text is selected, position the box at the bottom-center of the screen.
     inputBox.style.left = '50%';
-    inputBox.style.top = '50%';
-    inputBox.style.transform = 'translate(-50%, -50%)';
+    inputBox.style.bottom = '25%';
+    inputBox.style.transform = 'translateX(-50%)';
   }
 
   currentInputBox = container;
