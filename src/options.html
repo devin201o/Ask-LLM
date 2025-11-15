@@ -4,13 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ask LLM - Settings</title>
-  <link rel="stylesheet" href="styles/options.css">
+  <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Ask LLM Settings</h1>
-      <p>Configure your OpenRouter API key</p>
+      <div class="header-content">
+        <img src="icons/icon48.png" alt="Ask LLM Icon" class="logo">
+        <h1>Ask LLM Settings</h1>
+      </div>
+      <p>Configure your API key and preferences</p>
     </header>
 
     <form id="settingsForm">
@@ -25,31 +28,13 @@
         </div>
 
         <div class="form-group">
-          <label for="apiKey">OpenRouter API Key *</label>
-          <input 
-            type="password" 
-            id="apiKey" 
-            name="apiKey" 
-            placeholder="sk-or-..." 
-            required 
-          />
+          <label for="apiKey">API Key</label>
+          <input type="password" id="apiKey" name="apiKey" placeholder="sk-or-..." required />
           <small>Your API key is stored locally and never sent anywhere except to OpenRouter API.</small>
         </div>
 
-        <div class="form-group" id="endpointGroup">
-          <label for="apiEndpoint">API Endpoint</label>
-          <input 
-            type="url" 
-            id="apiEndpoint" 
-            name="apiEndpoint" 
-            placeholder="https://openrouter.ai/api/v1/chat/completions" 
-            readonly
-          />
-          <small>Automatically set based on provider, but you can customize it.</small>
-        </div>
-
         <div class="form-group">
-          <label for="model">OpenRouter Model</label>
+          <label for="model">Model</label>
           <div class="model-selection">
             <select id="model" name="model"></select>
             <button type="button" id="addModelBtn" class="btn-icon">+</button>
@@ -57,23 +42,15 @@
           </div>
           <small>Select a model, or add/delete models.</small>
         </div>
-
-        <div class="form-group">
-          <label for="maxTokens">Max Output Tokens</label>
-          <input
-            type="number"
-            id="maxTokens"
-            name="maxTokens"
-            min="50"
-            max="2000"
-            step="50"
-          />
-          <small>Max tokens for the LLM response (50-2000).</small>
-        </div>
       </section>
 
       <section class="section">
-        <h2>Display Preferences</h2>
+        <h2>Preferences</h2>
+        <div class="form-group">
+          <label for="maxTokens">Max Output Tokens</label>
+          <input type="number" id="maxTokens" name="maxTokens" min="50" max="2000" step="50" />
+          <small>Max tokens for the LLM response (50-2000).</small>
+        </div>
         
         <div class="form-group">
           <label for="toastPosition">Toast Position</label>
@@ -85,50 +62,34 @@
 
         <div class="form-group">
           <label for="toastDuration">Toast Duration (seconds)</label>
-          <input 
-            type="number" 
-            id="toastDuration" 
-            name="toastDuration" 
-            min="5" 
-            max="60" 
-            step="5" 
-          />
+          <input type="number" id="toastDuration" name="toastDuration" min="5" max="60" step="5" />
           <small>How long the response stays visible (5-60 seconds).</small>
         </div>
 
-        <div class="form-group form-group-toggle">
+        <div class="form-group-toggle">
           <label for="toastIndefinite">Stay Indefinitely</label>
           <div class="toggle-switch">
             <input type="checkbox" id="toastIndefinite" name="toastIndefinite">
             <label class="slider" for="toastIndefinite"></label>
           </div>
-          <!-- <small>If enabled, the response box will not automatically disappear.</small> -->
         </div>
       </section>
 
       <section class="section">
-        <h2>Prompt Mode</h2>
+        <h2>Prompt</h2>
         <div class="form-group">
-          <div class="radio-group">
-            <label>
-              <input type="radio" name="promptMode" value="auto" checked>
-              Auto (pre-defined prompt)
-            </label>
-            <label>
-              <input type="radio" name="promptMode" value="manual">
-              Manual (ask for prompt each time)
-            </label>
-            <label>
-              <input type="radio" name="promptMode" value="custom">
-              Custom (define your own prompt)
-            </label>
-          </div>
-          <div id="customPromptContainer" class="form-group" style="display: none;">
-            <label for="customPrompt">Custom Prompt</label>
-            <textarea id="customPrompt" name="customPrompt" rows="4" placeholder="e.g., Explain this to me like I'm five years old."></textarea>
-          </div>
-          <small>This setting can also be changed in the extension popup.</small>
+          <label for="promptMode">Prompt Mode</label>
+          <select id="promptMode" name="promptMode">
+            <option value="auto">Auto</option>
+            <option value="manual">Manual</option>
+            <option value="custom">Custom</option>
+          </select>
         </div>
+        <div id="customPromptContainer" class="form-group" style="display: none;">
+          <label for="customPrompt">Custom Prompt</label>
+          <textarea id="customPrompt" name="customPrompt" rows="4" placeholder="e.g., Explain this to me like I'm five years old."></textarea>
+        </div>
+        <small>This setting can also be changed in the extension popup.</small>
       </section>
 
       <section class="section">
@@ -155,9 +116,8 @@
       <div class="form-actions">
         <button type="submit" class="btn-primary">Save Settings</button>
         <button type="button" id="testBtn" class="btn-secondary">Test Connection</button>
+        <div class="status" id="status"></div>
       </div>
-
-      <div class="status" id="status"></div>
     </form>
   </div>
   <script type="module" src="./options.ts"></script>
