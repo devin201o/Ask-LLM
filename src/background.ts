@@ -34,6 +34,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  const isPdf = tab?.url?.toLowerCase().endsWith('.pdf');
+
+  if (isPdf && !info.selectionText) {
+    // Special handling for PDFs where direct selection is not possible
+    await handlePdfInteraction(tab.id);
+    return;
+  }
+
   if (
     info.menuItemId !== CONTEXT_MENU_ID ||
     !info.selectionText ||
@@ -144,6 +152,62 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     updateContextMenu();
   }
 });
+
+chrome.notifications.onClicked.addListener(async (notificationId) => {
+  if (typeof notificationId === 'string' && notificationId.startsWith('pdf-clipboard-notification-')) {
+    const tabId = parseInt(notificationId.replace('pdf-clipboard-notification-', ''), 10);
+    if (isNaN(tabId)) {
+      return;
+    }
+
+    try {
+      // We cannot use navigator.clipboard in the service worker,
+      // so we inject a script into the tab to read the clipboard.
+      const injectionResults = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => navigator.clipboard.readText(),
+      });
+
+      if (chrome.runtime.lastError) {
+        throw new Error(chrome.runtime.lastError.message);
+      }
+
+      const clipboardText = injectionResults?.[0]?.result;
+
+      if (clipboardText) {
+        await processLLMRequest(clipboardText, tabId);
+      } else {
+        await ensureAndSendMessage(tabId, {
+          type: 'SHOW_TOAST',
+          payload: { message: 'Clipboard is empty or could not be read. Please copy some text first.', type: 'error' },
+        });
+      }
+    } catch (error) {
+      console.error('Failed to read from clipboard via injection:', error);
+      await ensureAndSendMessage(tabId, {
+        type: 'SHOW_TOAST',
+        payload: { message: `Could not read from clipboard: ${String(error)}`, type: 'error' },
+      });
+    } finally {
+        chrome.notifications.clear(notificationId);
+    }
+  }
+});
+
+async function handlePdfInteraction(tabId: number | undefined) {
+  if (!tabId) return;
+
+  const NOTIFICATION_ID = `pdf-clipboard-notification-${tabId}`;
+
+  chrome.notifications.create(NOTIFICATION_ID, {
+    type: 'basic',
+    iconUrl: 'icons/icon128.png',
+    title: 'Ask LLM for PDFs',
+    message: 'Please copy the text you want to ask about, then click this notification to proceed.',
+    priority: 2,
+    requireInteraction: true,
+  });
+}
 
 // --- CORE LOGIC ---
 async function processLLMRequest(text: string, tabId: number, manualPrompt?: string) {
