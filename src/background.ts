@@ -2,6 +2,17 @@ import { DEFAULT_SETTINGS } from './types';
 import type { ExtensionSettings, LLMResponse } from './types';
 
 const CONTEXT_MENU_ID = 'ask-llm';
+let cachedSettings: ExtensionSettings | null = null;
+
+async function getSettings(): Promise<ExtensionSettings> {
+  if (cachedSettings) {
+    return cachedSettings;
+  }
+  const { settings } = await chrome.storage.local.get('settings');
+  const newSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+  cachedSettings = newSettings;
+  return newSettings;
+}
 
 // --- INITIALIZATION ---
 chrome.runtime.onInstalled.addListener(async () => {
@@ -49,8 +60,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
-  const { settings } = await chrome.storage.local.get('settings');
-  const currentSettings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+  const currentSettings = await getSettings();
 
   if (!currentSettings.apiKey) {
     await ensureAndSendMessage(tab.id, {
@@ -101,8 +111,7 @@ chrome.commands.onCommand.addListener(async (command) => {
       // We can get an empty result, which is fine.
       const selectionText = (injectionResults && injectionResults.length > 0 ? injectionResults[0].result : '') || '';
 
-      const { settings } = await chrome.storage.local.get('settings');
-      const currentSettings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+      const currentSettings = await getSettings();
 
       if (!currentSettings.apiKey) {
          await ensureAndSendMessage(tab.id, {
@@ -141,14 +150,14 @@ chrome.commands.onCommand.addListener(async (command) => {
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === 'local' && changes.settings) {
+    cachedSettings = { ...DEFAULT_SETTINGS, ...(changes.settings.newValue || {}) };
     updateContextMenu();
   }
 });
 
 // --- CORE LOGIC ---
 async function processLLMRequest(text: string, tabId: number, manualPrompt?: string) {
-  const { settings } = await chrome.storage.local.get('settings');
-  const currentSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+  const currentSettings = await getSettings();
 
   const isReady = await ensureContentScript(tabId);
   if (!isReady) {
@@ -231,8 +240,8 @@ async function callLLM(text: string, settings: ExtensionSettings, manualPrompt?:
 
 // --- HELPERS ---
 async function updateContextMenu() {
-  const { settings } = await chrome.storage.local.get('settings');
-  const enabled = settings?.enabled ?? DEFAULT_SETTINGS.enabled;
+  const settings = await getSettings();
+  const enabled = settings.enabled;
 
   await chrome.contextMenus.removeAll();
 
