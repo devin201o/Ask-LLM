@@ -83,6 +83,36 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input-wrapper input {
+  padding-right: 40px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.toggle-password-btn:hover {
+  color: #374151;
+  background-color: #f3f4f6;
+}
+
 small {
   display: block;
   margin-top: 4px;
