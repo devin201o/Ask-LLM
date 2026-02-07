@@ -258,3 +258,39 @@ input[type="range"] {
 .btn-icon:hover {
   background: #e5e7eb;
 }
+/* Password Visibility Toggle */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  padding-right: 40px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.toggle-password-btn:hover {
+  color: #4b5563;
+  background-color: #f3f4f6;
+}
+
+.toggle-password-btn:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  color: #3b82f6;
+}
