@@ -3,6 +3,7 @@ import { ExtensionSettings, DEFAULT_SETTINGS } from './types';
 const form = document.getElementById('settingsForm') as HTMLFormElement;
 const providerSelect = document.getElementById('provider') as HTMLSelectElement;
 const apiKeyInput = document.getElementById('apiKey') as HTMLInputElement;
+const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn') as HTMLButtonElement;
 const apiEndpointInput = document.getElementById('apiEndpoint') as HTMLInputElement;
 const modelSelect = document.getElementById('model') as HTMLSelectElement;
 const addModelBtn = document.getElementById('addModelBtn') as HTMLButtonElement;
@@ -25,6 +26,20 @@ const opacityValue = document.getElementById('opacityValue') as HTMLSpanElement;
 const ENDPOINTS = {
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
 };
+
+const EYE_ICON = `
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+  <circle cx="12" cy="12" r="3" />
+</svg>`;
+
+const EYE_OFF_ICON = `
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+  <line x1="2" x2="22" y1="2" y2="22" />
+</svg>`;
 
 function updateModelDropdown(models: string[], selectedModel: string) {
   modelSelect.innerHTML = '';
@@ -86,6 +101,17 @@ function updateCustomPromptVisibility() {
 promptModeRadios.forEach(radio => {
   radio.addEventListener('change', updateCustomPromptVisibility);
 });
+
+if (toggleApiKeyBtn) {
+  toggleApiKeyBtn.innerHTML = EYE_ICON;
+
+  toggleApiKeyBtn.addEventListener('click', () => {
+    const isPassword = apiKeyInput.type === 'password';
+    apiKeyInput.type = isPassword ? 'text' : 'password';
+    toggleApiKeyBtn.innerHTML = isPassword ? EYE_OFF_ICON : EYE_ICON;
+    toggleApiKeyBtn.setAttribute('aria-label', isPassword ? 'Hide API key' : 'Show API key');
+  });
+}
 
 providerSelect.addEventListener('change', () => {
   const provider = providerSelect.value as 'openrouter' | 'custom';
