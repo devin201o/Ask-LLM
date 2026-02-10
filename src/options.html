@@ -26,14 +26,22 @@
 
         <div class="form-group">
           <label for="apiKey">OpenRouter API Key *</label>
-          <input 
-            type="password" 
-            id="apiKey" 
-            name="apiKey" 
-            placeholder="sk-or-..." 
-            required 
-            aria-describedby="apiKeyHelp"
-          />
+          <div class="input-wrapper">
+            <input
+              type="password"
+              id="apiKey"
+              name="apiKey"
+              placeholder="sk-or-..."
+              required
+              aria-describedby="apiKeyHelp"
+            />
+            <button type="button" id="toggleApiKeyVisibility" class="toggle-password-btn" aria-label="Show API Key">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </div>
           <small id="apiKeyHelp">Your API key is stored locally and never sent anywhere except to OpenRouter API.</small>
         </div>
 
