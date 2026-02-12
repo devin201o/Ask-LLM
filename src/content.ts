@@ -1,5 +1,11 @@
 import type { ToastOptions } from './types';
 
+declare global {
+  interface Window {
+    hasRun?: boolean;
+  }
+}
+
 // --- STATE ---
 let currentToast: HTMLDivElement | null = null;
 let toastTimeout: number | null = null;
@@ -8,29 +14,32 @@ let currentInputBox: HTMLDivElement | null = null;
 
 // --- EVENT LISTENERS ---
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'SHOW_TOAST') {
-    (async () => {
-      await showToast(message.payload);
-      sendResponse({ success: true });
-    })();
-    return true;
-  }
+if (!window.hasRun) {
+  window.hasRun = true;
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'SHOW_TOAST') {
+      (async () => {
+        await showToast(message.payload);
+        sendResponse({ success: true });
+      })();
+      return true;
+    }
 
-  if (message.type === 'SHOW_INPUT_BOX') {
-    showInputBox(message.payload.selectionText);
+    if (message.type === 'SHOW_INPUT_BOX') {
+      showInputBox(message.payload.selectionText);
+      sendResponse({ success: true });
+      return false;
+    }
+
+    if (message.type === 'PING') {
+      sendResponse({ type: 'PONG' });
+      return false; // Not async
+    }
+
     sendResponse({ success: true });
     return false;
-  }
-
-  if (message.type === 'PING') {
-    sendResponse({ type: 'PONG' });
-    return false; // Not async
-  }
-
-  sendResponse({ success: true });
-  return false;
-});
+  });
+}
 
 // --- INPUT BOX IMPLEMENTATION ---
 
