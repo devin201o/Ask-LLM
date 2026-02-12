@@ -246,7 +246,7 @@ async function updateContextMenu() {
 }
 
 async function pingTab(tabId: number): Promise<boolean> {
-  let timeout: NodeJS.Timeout;
+  let timeout: ReturnType<typeof setTimeout>;
   return new Promise((resolve) => {
     timeout = setTimeout(() => {
       console.log(`Ping timeout for tab ${tabId}`);
