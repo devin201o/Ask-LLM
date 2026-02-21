@@ -21,6 +21,31 @@ const discreteModeToggle = document.getElementById('discreteMode') as HTMLInputE
 const opacityGroup = document.getElementById('opacityGroup') as HTMLDivElement;
 const opacitySlider = document.getElementById('discreteModeOpacity') as HTMLInputElement;
 const opacityValue = document.getElementById('opacityValue') as HTMLSpanElement;
+const togglePasswordBtn = document.querySelector('.toggle-password-btn') as HTMLButtonElement;
+
+const EYE_ICON = `
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+  <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+</svg>
+`;
+
+const EYE_OFF_ICON = `
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+  <path d="M12 19.5c-4.638 0-8.573-3.007-9.963-7.178a1.012 1.012 0 0 1 0-.639c.288-.868.65-1.688 1.078-2.455" />
+  <path d="M2 2l20 20" />
+</svg>
+`;
+
+togglePasswordBtn.addEventListener('click', () => {
+  const type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
+  apiKeyInput.setAttribute('type', type);
+
+  togglePasswordBtn.innerHTML = type === 'password' ? EYE_ICON : EYE_OFF_ICON;
+  togglePasswordBtn.setAttribute('aria-label', type === 'password' ? 'Show password' : 'Hide password');
+});
 
 const ENDPOINTS = {
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
