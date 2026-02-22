@@ -218,4 +218,29 @@ function showStatus(message: string, type: 'success' | 'error' | 'info') {
   }, 5000);
 }
 
+// Password toggle functionality
+const togglePasswordBtn = document.querySelector('.toggle-password-btn') as HTMLButtonElement;
+const EYE_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+    <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
+  </svg>
+`;
+const EYE_SLASH_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+    <path fill-rule="evenodd" d="M3.53 2.47a.75.75 0 00-1.06 1.06l18 18a.75.75 0 101.06-1.06l-18-18zM22.676 12.553a11.249 11.249 0 01-2.631 4.31l-3.099-3.099a5.25 5.25 0 00-6.71-6.71L7.759 4.577a11.217 11.217 0 014.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113z" clip-rule="evenodd" />
+    <path d="M5.535 5.535l5.015 5.015a3 3 0 104.242 4.242l1.986 1.986a11.255 11.255 0 01-5.897 1.126c-4.97 0-9.186-3.223-10.675-7.69a1.766 1.766 0 010-1.113 11.258 11.258 0 011.33-2.566z" />
+  </svg>
+`;
+
+if (togglePasswordBtn) {
+  togglePasswordBtn.addEventListener('click', () => {
+    const isPassword = apiKeyInput.type === 'password';
+
+    apiKeyInput.type = isPassword ? 'text' : 'password';
+    togglePasswordBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    togglePasswordBtn.innerHTML = isPassword ? EYE_SLASH_ICON : EYE_ICON;
+  });
+}
+
 loadSettings();

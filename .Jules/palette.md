@@ -1,0 +1,3 @@
+## 2025-05-20 - Password Visibility Toggle Pattern
+**Learning:** Adding a show/hide toggle to password inputs significantly reduces user error, especially for long API keys. For accessibility, the button must be inside the input wrapper (visually), but not interfere with the input's text. Dynamically updating `aria-label` from "Show password" to "Hide password" is critical for screen reader users to know the current state and the action they are about to perform.
+**Action:** Use a relative `.input-wrapper` container with `padding-right` on the input equal to the button's width + spacing. Use an absolute positioned button with an SVG icon. Ensure `type="button"` to prevent form submission.
