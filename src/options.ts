@@ -21,6 +21,19 @@ const discreteModeToggle = document.getElementById('discreteMode') as HTMLInputE
 const opacityGroup = document.getElementById('opacityGroup') as HTMLDivElement;
 const opacitySlider = document.getElementById('discreteModeOpacity') as HTMLInputElement;
 const opacityValue = document.getElementById('opacityValue') as HTMLSpanElement;
+const togglePasswordBtn = document.querySelector('.toggle-password-btn') as HTMLButtonElement;
+
+const EYE_ICON = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+  <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
+</svg>`;
+
+const EYE_SLASH_ICON = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M3.53 2.47a.75.75 0 00-1.06 1.06l18 18a.75.75 0 101.06-1.06l-18-18zM22.676 12.553a11.249 11.249 0 01-2.631 4.31l-3.099-3.099a5.25 5.25 0 00-6.71-6.71L7.759 4.577a11.217 11.217 0 014.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113z" />
+  <path d="M5.535 7.656A11.27 11.27 0 001.323 11.447c.12.362.12.752 0 1.113 1.487 4.471 5.705 7.697 10.677 7.697 2.27 0 4.395-.67 6.191-1.834l-2.772-2.772a5.25 5.25 0 01-6.71-6.71L5.535 7.656z" />
+</svg>`;
 
 const ENDPOINTS = {
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
@@ -106,6 +119,19 @@ discreteModeToggle.addEventListener('change', updateOpacityGroupVisibility);
 
 opacitySlider.addEventListener('input', () => {
   opacityValue.textContent = opacitySlider.value;
+});
+
+togglePasswordBtn.addEventListener('click', () => {
+  const type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
+  apiKeyInput.setAttribute('type', type);
+
+  if (type === 'text') {
+    togglePasswordBtn.innerHTML = EYE_SLASH_ICON;
+    togglePasswordBtn.setAttribute('aria-label', 'Hide password');
+  } else {
+    togglePasswordBtn.innerHTML = EYE_ICON;
+    togglePasswordBtn.setAttribute('aria-label', 'Show password');
+  }
 });
 
 addModelBtn.addEventListener('click', async () => {
