@@ -55,6 +55,39 @@ header p {
   margin-bottom: 0;
 }
 
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  padding-right: 40px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.toggle-password-btn:hover {
+  color: #374151;
+}
+
+.toggle-password-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 label {
   display: block;
   font-size: 14px;
