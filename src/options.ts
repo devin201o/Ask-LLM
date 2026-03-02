@@ -7,6 +7,7 @@ const apiEndpointInput = document.getElementById('apiEndpoint') as HTMLInputElem
 const modelSelect = document.getElementById('model') as HTMLSelectElement;
 const addModelBtn = document.getElementById('addModelBtn') as HTMLButtonElement;
 const deleteModelBtn = document.getElementById('deleteModelBtn') as HTMLButtonElement;
+const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn') as HTMLButtonElement;
 const maxTokensInput = document.getElementById('maxTokens') as HTMLInputElement;
 const toastPositionSelect = document.getElementById('toastPosition') as HTMLSelectElement;
 const toastDurationInput = document.getElementById('toastDuration') as HTMLInputElement;
@@ -24,6 +25,11 @@ const opacityValue = document.getElementById('opacityValue') as HTMLSpanElement;
 
 const ENDPOINTS = {
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+};
+
+const ICONS = {
+  eye: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  eyeOff: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`
 };
 
 function updateModelDropdown(models: string[], selectedModel: string) {
@@ -72,6 +78,23 @@ async function loadSettings() {
   updateEndpointVisibility();
   updateCustomPromptVisibility();
   updateToastDurationState();
+  initPasswordToggle();
+}
+
+function initPasswordToggle() {
+  if (toggleApiKeyBtn && apiKeyInput) {
+    toggleApiKeyBtn.innerHTML = ICONS.eye;
+    toggleApiKeyBtn.addEventListener('click', () => {
+      const type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      apiKeyInput.setAttribute('type', type);
+
+      const isPassword = type === 'password';
+      toggleApiKeyBtn.innerHTML = isPassword ? ICONS.eye : ICONS.eyeOff;
+      const label = isPassword ? 'Show API Key' : 'Hide API Key';
+      toggleApiKeyBtn.setAttribute('aria-label', label);
+      toggleApiKeyBtn.setAttribute('title', label);
+    });
+  }
 }
 
 function updateCustomPromptVisibility() {
