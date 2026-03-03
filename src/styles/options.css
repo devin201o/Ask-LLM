@@ -90,6 +90,36 @@ small {
   color: #6b7280;
 }
 
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  padding-right: 40px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  width: auto;
+  height: auto;
+  padding: 4px;
+}
+
+.toggle-password-btn:hover {
+  background: transparent;
+  color: #374151;
+}
+
 .form-group-toggle {
   display: flex;
   justify-content: space-between;
