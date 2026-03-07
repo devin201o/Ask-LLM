@@ -67,17 +67,20 @@ input[type="text"],
 input[type="password"],
 input[type="url"],
 input[type="number"],
-select {
+select,
+textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
   transition: border-color 0.2s;
+  font-family: inherit;
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -145,6 +148,11 @@ input:checked + .slider:before {
   transform: translateX(22px);
 }
 
+.toggle-switch input:focus-visible + .slider {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
 .slider-container {
   display: flex;
   align-items: center;
@@ -196,6 +204,13 @@ input[type="range"] {
 
 .btn-secondary:hover {
   background: #f9fafb;
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-icon:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .status {
