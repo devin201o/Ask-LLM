@@ -113,6 +113,11 @@ small {
   height: 0;
 }
 
+.toggle-switch input:focus-visible + .slider {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
 .toggle-switch .slider {
   position: absolute;
   cursor: pointer;
