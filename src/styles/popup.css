@@ -70,6 +70,10 @@ h1 {
   transform: translateX(20px);
 }
 
+.toggle-label input[type="checkbox"]:focus-visible + .toggle-slider {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
 .toggle-text {
   font-size: 14px;
   color: #374151;

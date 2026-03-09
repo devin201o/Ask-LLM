@@ -145,6 +145,10 @@ input:checked + .slider:before {
   transform: translateX(22px);
 }
 
+.toggle-switch input:focus-visible + .slider {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
 .slider-container {
   display: flex;
   align-items: center;

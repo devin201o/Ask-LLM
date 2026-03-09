@@ -1,0 +1,3 @@
+## 2024-05-24 - Visually Hidden Checkboxes Require Explicit Focus Styles
+**Learning:** Custom toggle switches implemented with visually hidden (`opacity: 0`) checkboxes lose their native focus ring. Without explicit focus styles, they violate WCAG 2.4.7 (Focus Visible), making keyboard navigation impossible.
+**Action:** Always add an adjacent sibling selector with `:focus-visible` (e.g., `input[type="checkbox"]:focus-visible + .slider`) applying a clear box-shadow when using `opacity: 0` to hide native checkbox inputs for custom toggles.
