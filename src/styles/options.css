@@ -76,6 +76,41 @@ select {
   transition: border-color 0.2s;
 }
 
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  padding-right: 40px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.toggle-password-btn:hover {
+  color: #374151;
+  background-color: #f3f4f6;
+}
+
+.toggle-password-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
 input:focus,
 select:focus {
   outline: none;
@@ -135,6 +170,11 @@ small {
   background-color: white;
   transition: .4s;
   border-radius: 50%;
+}
+
+input:focus-visible + .slider {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 input:checked + .slider {
