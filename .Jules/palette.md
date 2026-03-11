@@ -1,0 +1,3 @@
+## 2024-05-24 - Dynamic ARIA Labels for Toggles
+**Learning:** When using icon-only buttons for toggles (like showing/hiding a password), the `aria-label` must be dynamically updated to reflect the new action the user will take, ensuring screen reader users understand the current state and what will happen when they interact with it.
+**Action:** When implementing toggles, always link the `aria-label` update to the state change logic in TypeScript.
