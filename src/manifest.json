@@ -40,7 +40,7 @@
     "128": "icons/icon128.png"
   },
   "commands": {
-    "run-ask-llm": {
+    "toggle-extension": {
       "suggested_key": {
         "default": "Ctrl+Shift+Space",
         "mac": "Command+Shift+Space"
