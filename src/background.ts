@@ -73,7 +73,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command === 'run-ask-llm') {
+  if (command === 'toggle-extension' || command === 'run-ask-llm') {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (!tab?.id || !tab.url) {
