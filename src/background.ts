@@ -31,7 +31,69 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true; // Indicate async response
   }
+
+  if (message.type === 'TRIGGER_RUN_ASK_LLM') {
+    const tabId = sender.tab?.id;
+    if (tabId) {
+      handleRunAskLlmCommand(tabId, sender.tab?.url);
+    }
+    sendResponse({ success: true });
+    return false;
+  }
 });
+
+async function handleRunAskLlmCommand(tabId: number, url?: string) {
+  if (!url || !/^(https?|file):/.test(url)) {
+    console.log(`Cannot run Ask LLM on an unsupported page: ${url}`);
+    return;
+  }
+
+  try {
+    const injectionResults = await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: () => window.getSelection()?.toString(),
+    });
+
+    if (chrome.runtime.lastError) {
+      console.error(`Error injecting script: ${chrome.runtime.lastError.message}`);
+      return;
+    }
+
+    const selectionText = (injectionResults && injectionResults.length > 0 ? injectionResults[0].result : '') || '';
+    const { settings } = await chrome.storage.local.get('settings');
+    const currentSettings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+
+    if (!currentSettings.apiKey) {
+      await ensureAndSendMessage(tabId, {
+        type: 'SHOW_TOAST',
+        payload: { message: 'Please set your API key in the extension options.', type: 'error' },
+      });
+      return;
+    }
+
+    if (currentSettings.promptMode === 'manual') {
+      await ensureAndSendMessage(tabId, {
+        type: 'SHOW_INPUT_BOX',
+        payload: { selectionText },
+      });
+    } else {
+      if (selectionText) {
+        await processLLMRequest(selectionText, tabId);
+      } else {
+        await ensureAndSendMessage(tabId, {
+          type: 'SHOW_TOAST',
+          payload: { message: 'No text selected.', type: 'info', duration: 2000 },
+        });
+      }
+    }
+  } catch (e) {
+    console.error('Failed to execute script or process LLM request:', e);
+    await ensureAndSendMessage(tabId, {
+      type: 'SHOW_TOAST',
+      payload: { message: `An error occurred: ${String(e)}`, type: 'error' },
+    });
+  }
+}
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (
@@ -81,61 +143,7 @@ chrome.commands.onCommand.addListener(async (command) => {
       return;
     }
 
-    // Ensure the extension doesn't run on unsupported pages
-    if (!/^(https?|file):/.test(tab.url)) {
-      console.log(`Cannot run Ask LLM on an unsupported page: ${tab.url}`);
-      return;
-    }
-
-    try {
-      const injectionResults = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => window.getSelection()?.toString(),
-      });
-
-      if (chrome.runtime.lastError) {
-        console.error(`Error injecting script: ${chrome.runtime.lastError.message}`);
-        return;
-      }
-
-      // We can get an empty result, which is fine.
-      const selectionText = (injectionResults && injectionResults.length > 0 ? injectionResults[0].result : '') || '';
-
-      const { settings } = await chrome.storage.local.get('settings');
-      const currentSettings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
-
-      if (!currentSettings.apiKey) {
-         await ensureAndSendMessage(tab.id, {
-           type: 'SHOW_TOAST',
-           payload: { message: 'Please set your API key in the extension options.', type: 'error' },
-         });
-         return;
-      }
-
-      if (currentSettings.promptMode === 'manual') {
-        // In manual mode, always show the input box, even if there's no selection.
-        await ensureAndSendMessage(tab.id, {
-          type: 'SHOW_INPUT_BOX',
-          payload: { selectionText }, // selectionText can be ''
-        });
-      } else {
-        // In other modes (auto, custom), require a text selection.
-        if (selectionText) {
-          await processLLMRequest(selectionText, tab.id);
-        } else {
-          await ensureAndSendMessage(tab.id, {
-            type: 'SHOW_TOAST',
-            payload: { message: 'No text selected.', type: 'info', duration: 2000 },
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Failed to execute script or process LLM request:', e);
-       await ensureAndSendMessage(tab.id, {
-         type: 'SHOW_TOAST',
-         payload: { message: `An error occurred: ${String(e)}`, type: 'error' },
-       });
-    }
+    handleRunAskLlmCommand(tab.id, tab.url);
   }
 });
 
@@ -246,7 +254,7 @@ async function updateContextMenu() {
 }
 
 async function pingTab(tabId: number): Promise<boolean> {
-  let timeout: NodeJS.Timeout;
+  let timeout: ReturnType<typeof setTimeout>;
   return new Promise((resolve) => {
     timeout = setTimeout(() => {
       console.log(`Ping timeout for tab ${tabId}`);

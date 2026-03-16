@@ -8,6 +8,13 @@ let currentInputBox: HTMLDivElement | null = null;
 
 // --- EVENT LISTENERS ---
 
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'Space') {
+    e.preventDefault();
+    chrome.runtime.sendMessage({ type: 'TRIGGER_RUN_ASK_LLM' });
+  }
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SHOW_TOAST') {
     (async () => {
