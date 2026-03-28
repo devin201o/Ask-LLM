@@ -15,6 +15,38 @@ export interface ExtensionSettings {
   maxTokens: number;
 }
 
+export interface CaptureBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface CaptureViewport {
+  viewportWidth: number;
+  viewportHeight: number;
+  devicePixelRatio: number;
+}
+
+export interface ImageAttachment {
+  dataUrl: string;
+  mimeType: string;
+  width: number;
+  height: number;
+  source: 'capture';
+}
+
+export interface PromptRequestPayload {
+  selectionText: string;
+  prompt?: string;
+  imageAttachment?: ImageAttachment;
+}
+
+export interface ShowInputBoxPayload {
+  selectionText: string;
+  imageAttachment?: ImageAttachment;
+}
+
 export interface LLMResponse {
   success: boolean;
   content?: string;

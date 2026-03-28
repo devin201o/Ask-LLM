@@ -46,6 +46,13 @@
         "mac": "Command+Shift+Space"
       },
       "description": "Run Ask LLM on selected text"
+    },
+    "capture-ask-llm": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Capture a screen region and ask Ask LLM about it"
     }
   },
   "web_accessible_resources": [

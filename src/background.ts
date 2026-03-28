@@ -1,7 +1,9 @@
 import { DEFAULT_SETTINGS } from './types';
-import type { ExtensionSettings, LLMResponse } from './types';
+import type { ExtensionSettings, ImageAttachment, LLMResponse, PromptRequestPayload } from './types';
+import { buildChatCompletionRequest } from './request-builder';
 
 const CONTEXT_MENU_ID = 'ask-llm';
+const CAPTURE_CONTEXT_MENU_ID = 'ask-llm-capture';
 
 // --- INITIALIZATION ---
 chrome.runtime.onInstalled.addListener(async () => {
@@ -20,43 +22,64 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
-  if (message.type === 'EXECUTE_MANUAL_PROMPT') {
+  if (message.type === 'EXECUTE_PROMPT_REQUEST' || message.type === 'EXECUTE_MANUAL_PROMPT') {
     (async () => {
-      const { selectionText, prompt } = message.payload;
+      const { selectionText, prompt, imageAttachment } = message.payload as PromptRequestPayload;
       const tabId = sender.tab?.id;
       if (tabId) {
-        await processLLMRequest(selectionText, tabId, prompt);
+        await processLLMRequest(selectionText, tabId, prompt, imageAttachment);
       }
     })();
     sendResponse({ success: true });
     return true; // Indicate async response
   }
+
+  if (message.type === 'CAPTURE_VISIBLE_TAB') {
+    (async () => {
+      try {
+        if (sender.tab?.windowId === undefined) {
+          sendResponse({ success: false, error: 'Unable to access the active window for capture.' });
+          return;
+        }
+
+        const dataUrl = await chrome.tabs.captureVisibleTab(sender.tab.windowId, {
+          format: 'png',
+        });
+
+        sendResponse({ success: true, dataUrl });
+      } catch (error) {
+        sendResponse({ success: false, error: String(error) });
+      }
+    })();
+    return true;
+  }
+
+  sendResponse({ success: true });
+  return false;
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (
-    info.menuItemId !== CONTEXT_MENU_ID ||
-    !info.selectionText ||
-    !tab?.id ||
-    !tab.url
-  ) {
+  if (!tab?.id || !tab.url) {
     return;
   }
-
 
   // Ensure the extension doesn't run on unsupported pages like chrome://
   if (!/^(https?|file):/.test(tab.url)) {
     return;
   }
 
-  const { settings } = await chrome.storage.local.get('settings');
-  const currentSettings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+  const currentSettings = await getCurrentSettings();
 
-  if (!currentSettings.apiKey) {
-    await ensureAndSendMessage(tab.id, {
-      type: 'SHOW_TOAST',
-      payload: { message: 'Please set your API key in the extension options.', type: 'error' },
-    });
+  if (!(await ensureApiKey(currentSettings, tab.id))) {
+    return;
+  }
+
+  if (info.menuItemId === CAPTURE_CONTEXT_MENU_ID) {
+    await startRegionCapture(tab.id);
+    return;
+  }
+
+  if (info.menuItemId !== CONTEXT_MENU_ID || !info.selectionText) {
     return;
   }
 
@@ -67,75 +90,76 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         selectionText: info.selectionText,
       },
     });
-  } else {
-    await processLLMRequest(info.selectionText, tab.id);
+    return;
   }
+
+  await processLLMRequest(info.selectionText, tab.id);
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command === 'run-ask-llm') {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    if (!tab?.id || !tab.url) {
-      console.warn('Cannot run Ask LLM on a tab without ID or URL.', tab);
+  if (!tab?.id || !tab.url) {
+    console.warn('Cannot run Ask LLM on a tab without ID or URL.', tab);
+    return;
+  }
+
+  if (!/^(https?|file):/.test(tab.url)) {
+    console.log(`Cannot run Ask LLM on an unsupported page: ${tab.url}`);
+    return;
+  }
+
+  const currentSettings = await getCurrentSettings();
+
+  if (!(await ensureApiKey(currentSettings, tab.id))) {
+    return;
+  }
+
+  if (command === 'capture-ask-llm') {
+    await startRegionCapture(tab.id);
+    return;
+  }
+
+  if (command !== 'run-ask-llm') {
+    return;
+  }
+
+  try {
+    const injectionResults = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => window.getSelection()?.toString(),
+    });
+
+    if (chrome.runtime.lastError) {
+      console.error(`Error injecting script: ${chrome.runtime.lastError.message}`);
       return;
     }
 
-    // Ensure the extension doesn't run on unsupported pages
-    if (!/^(https?|file):/.test(tab.url)) {
-      console.log(`Cannot run Ask LLM on an unsupported page: ${tab.url}`);
-      return;
-    }
+    const selectionText = (injectionResults && injectionResults.length > 0 ? injectionResults[0].result : '') || '';
 
-    try {
-      const injectionResults = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => window.getSelection()?.toString(),
+    if (currentSettings.promptMode === 'manual') {
+      await ensureAndSendMessage(tab.id, {
+        type: 'SHOW_INPUT_BOX',
+        payload: { selectionText },
       });
-
-      if (chrome.runtime.lastError) {
-        console.error(`Error injecting script: ${chrome.runtime.lastError.message}`);
-        return;
-      }
-
-      // We can get an empty result, which is fine.
-      const selectionText = (injectionResults && injectionResults.length > 0 ? injectionResults[0].result : '') || '';
-
-      const { settings } = await chrome.storage.local.get('settings');
-      const currentSettings: ExtensionSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
-
-      if (!currentSettings.apiKey) {
-         await ensureAndSendMessage(tab.id, {
-           type: 'SHOW_TOAST',
-           payload: { message: 'Please set your API key in the extension options.', type: 'error' },
-         });
-         return;
-      }
-
-      if (currentSettings.promptMode === 'manual') {
-        // In manual mode, always show the input box, even if there's no selection.
-        await ensureAndSendMessage(tab.id, {
-          type: 'SHOW_INPUT_BOX',
-          payload: { selectionText }, // selectionText can be ''
-        });
-      } else {
-        // In other modes (auto, custom), require a text selection.
-        if (selectionText) {
-          await processLLMRequest(selectionText, tab.id);
-        } else {
-          await ensureAndSendMessage(tab.id, {
-            type: 'SHOW_TOAST',
-            payload: { message: 'No text selected.', type: 'info', duration: 2000 },
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Failed to execute script or process LLM request:', e);
-       await ensureAndSendMessage(tab.id, {
-         type: 'SHOW_TOAST',
-         payload: { message: `An error occurred: ${String(e)}`, type: 'error' },
-       });
+      return;
     }
+
+    if (!selectionText) {
+      await ensureAndSendMessage(tab.id, {
+        type: 'SHOW_TOAST',
+        payload: { message: 'No text selected.', type: 'info', duration: 2000 },
+      });
+      return;
+    }
+
+    await processLLMRequest(selectionText, tab.id);
+  } catch (error) {
+    console.error('Failed to execute script or process LLM request:', error);
+    await ensureAndSendMessage(tab.id, {
+      type: 'SHOW_TOAST',
+      payload: { message: `An error occurred: ${String(error)}`, type: 'error' },
+    });
   }
 });
 
@@ -146,9 +170,13 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 // --- CORE LOGIC ---
-async function processLLMRequest(text: string, tabId: number, manualPrompt?: string) {
-  const { settings } = await chrome.storage.local.get('settings');
-  const currentSettings = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+async function processLLMRequest(
+  text: string,
+  tabId: number,
+  manualPrompt?: string,
+  imageAttachment?: ImageAttachment,
+) {
+  const currentSettings = await getCurrentSettings();
 
   const isReady = await ensureContentScript(tabId);
   if (!isReady) {
@@ -162,7 +190,7 @@ async function processLLMRequest(text: string, tabId: number, manualPrompt?: str
   });
 
   try {
-    const response = await callLLM(text, currentSettings, manualPrompt);
+    const response = await callLLM(text, currentSettings, manualPrompt, imageAttachment);
     await ensureAndSendMessage(tabId, {
       type: 'SHOW_TOAST',
       payload: {
@@ -179,11 +207,12 @@ async function processLLMRequest(text: string, tabId: number, manualPrompt?: str
   }
 }
 
-import { DEFAULT_PROMPTS } from './prompts';
-
-const MANUAL_MODE_PROMPT_APPENDIX = 'Please be concise, while still being clear and informative.';
-
-async function callLLM(text: string, settings: ExtensionSettings, manualPrompt?: string): Promise<LLMResponse> {
+async function callLLM(
+  text: string,
+  settings: ExtensionSettings,
+  manualPrompt?: string,
+  imageAttachment?: ImageAttachment,
+): Promise<LLMResponse> {
   const { apiKey, apiEndpoint } = settings;
 
   const headers = {
@@ -193,24 +222,7 @@ async function callLLM(text: string, settings: ExtensionSettings, manualPrompt?:
     'X-Title': 'Ask LLM Extension',
   };
 
-  let systemPrompt: string;
-
-  if (manualPrompt) {
-    systemPrompt = `${manualPrompt} ${MANUAL_MODE_PROMPT_APPENDIX}`;
-  } else if (settings.promptMode === 'custom') {
-    systemPrompt = settings.customPrompt;
-  } else {
-    systemPrompt = DEFAULT_PROMPTS.conciseAcademic;
-  }
-
-  const requestBody = {
-    model: settings.selectedModel,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: text },
-    ],
-    max_tokens: settings.maxTokens,
-  };
+  const requestBody = buildChatCompletionRequest(text, settings, manualPrompt, imageAttachment);
 
   const response = await fetch(apiEndpoint, {
     method: 'POST',
@@ -242,11 +254,40 @@ async function updateContextMenu() {
       title: 'Ask LLM',
       contexts: ['selection'],
     });
+
+    chrome.contextMenus.create({
+      id: CAPTURE_CONTEXT_MENU_ID,
+      title: 'Ask LLM About Screen Region',
+      contexts: ['all'],
+    });
   }
 }
 
+async function getCurrentSettings(): Promise<ExtensionSettings> {
+  const { settings } = await chrome.storage.local.get('settings');
+  return { ...DEFAULT_SETTINGS, ...(settings || {}) };
+}
+
+async function ensureApiKey(settings: ExtensionSettings, tabId: number) {
+  if (settings.apiKey) {
+    return true;
+  }
+
+  await ensureAndSendMessage(tabId, {
+    type: 'SHOW_TOAST',
+    payload: { message: 'Please set your API key in the extension options.', type: 'error' },
+  });
+  return false;
+}
+
+async function startRegionCapture(tabId: number) {
+  await ensureAndSendMessage(tabId, {
+    type: 'START_REGION_SELECTION',
+  });
+}
+
 async function pingTab(tabId: number): Promise<boolean> {
-  let timeout: NodeJS.Timeout;
+  let timeout: ReturnType<typeof setTimeout>;
   return new Promise((resolve) => {
     timeout = setTimeout(() => {
       console.log(`Ping timeout for tab ${tabId}`);
