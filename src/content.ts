@@ -13,6 +13,7 @@ let toastTimeout: number | null = null;
 let copyTimeout: number | null = null;
 let currentInputBox: HTMLDivElement | null = null;
 let currentCaptureOverlay: HTMLDivElement | null = null;
+let currentPromptInput: HTMLTextAreaElement | null = null;
 
 // --- EVENT LISTENERS ---
 
@@ -66,8 +67,16 @@ function showInputBox(payload: string | ShowInputBoxPayload) {
   styleLink.href = chrome.runtime.getURL('styles/input-box.css');
   shadowRoot.appendChild(styleLink);
 
+  const modal = document.createElement('div');
+  modal.className = 'ask-llm-input-modal';
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'ask-llm-input-backdrop';
+
   const inputBox = document.createElement('div');
   inputBox.className = 'ask-llm-input-box-container';
+  inputBox.setAttribute('role', 'dialog');
+  inputBox.setAttribute('aria-modal', 'true');
 
   const header = document.createElement('div');
   header.className = 'input-box-header';
@@ -76,6 +85,7 @@ function showInputBox(payload: string | ShowInputBoxPayload) {
   const input = document.createElement('textarea');
   input.rows = imageAttachment ? 3 : 2;
   input.placeholder = 'Your prompt... (Press Ctrl+Enter to submit)';
+  currentPromptInput = input;
 
   let pendingImage = imageAttachment;
 
@@ -111,14 +121,23 @@ function showInputBox(payload: string | ShowInputBoxPayload) {
     inputBox.appendChild(header);
   }
 
-  const helpText = document.createElement('p');
-  helpText.textContent = pendingImage
-    ? 'Press Ctrl+Enter to submit. Esc or click away cancels.'
-    : 'Press Ctrl+Enter to submit. Esc or click away cancels.';
+  const submitPrompt = () => {
+    const userPrompt = input.value.trim();
+    if (!userPrompt) {
+      return;
+    }
+
+    chrome.runtime.sendMessage({
+      type: 'EXECUTE_PROMPT_REQUEST',
+      payload: { selectionText, prompt: userPrompt, imageAttachment: pendingImage },
+    });
+    dismissInputBox();
+  };
 
   inputBox.appendChild(input);
-  inputBox.appendChild(helpText);
-  shadowRoot.appendChild(inputBox);
+  modal.appendChild(backdrop);
+  modal.appendChild(inputBox);
+  shadowRoot.appendChild(modal);
   
   // Position the box.
   const selection = window.getSelection();
@@ -167,43 +186,125 @@ function showInputBox(payload: string | ShowInputBoxPayload) {
 
   // Handle submission
   input.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      dismissInputBox();
+      return;
+    }
+
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      const userPrompt = input.value.trim();
-      if (userPrompt) {
-        chrome.runtime.sendMessage({
-          type: 'EXECUTE_PROMPT_REQUEST',
-          payload: { selectionText, prompt: userPrompt, imageAttachment: pendingImage },
-        });
+      submitPrompt();
+    }
+  });
+
+  input.addEventListener('keyup', (e) => {
+    e.stopPropagation();
+  });
+
+  input.addEventListener('keypress', (e) => {
+    e.stopPropagation();
+  });
+
+  inputBox.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  backdrop.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    input.focus({ preventScroll: true });
+  });
+
+  const focusTrap = (e: FocusEvent) => {
+    if (!currentInputBox || !currentPromptInput) {
+      return;
+    }
+
+    if (isEventFromInputModal(e)) {
+      return;
+    }
+
+    e.stopPropagation();
+    currentPromptInput.focus({ preventScroll: true });
+  };
+
+  const pageKeyGuard = (e: KeyboardEvent) => {
+    if (!currentInputBox) {
+      return;
+    }
+
+    if (!isEventFromInputModal(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === 'Escape') {
         dismissInputBox();
       }
     }
-  });
+  };
+
+  const stopPointerFromPage = (e: MouseEvent) => {
+    if (!currentInputBox) {
+      return;
+    }
+
+    if (!isEventFromInputModal(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      currentPromptInput?.focus({ preventScroll: true });
+    }
+  };
+
+  const cleanupGuards = () => {
+    document.removeEventListener('focusin', focusTrap, true);
+    document.removeEventListener('keydown', pageKeyGuard, true);
+    document.removeEventListener('mousedown', stopPointerFromPage, true);
+  };
+
+  (container as any).__inputGuardsCleanup = cleanupGuards;
+
+  document.addEventListener('focusin', focusTrap, true);
+  document.addEventListener('keydown', pageKeyGuard, true);
+  document.addEventListener('mousedown', stopPointerFromPage, true);
 
   // Handle dismissal via Escape key
   document.addEventListener('keydown', handleEscapeForInputBox);
 
-  // Handle dismissal via click outside
-  setTimeout(() => {
-    document.addEventListener('click', handleDocumentClickForInputBox);
-  }, 0);
-
   input.focus({preventScroll: true});
+}
+
+function isEventFromInputModal(event: Event): boolean {
+  if (!currentInputBox) {
+    return false;
+  }
+
+  const path = event.composedPath();
+  const shadowRoot = currentInputBox.shadowRoot;
+
+  return path.some((node) => {
+    if (!(node instanceof Node)) {
+      return false;
+    }
+
+    if (node === currentInputBox) {
+      return true;
+    }
+
+    return Boolean(shadowRoot?.contains(node));
+  });
 }
 
 function dismissInputBox() {
   if (currentInputBox) {
+    const cleanupGuards = (currentInputBox as any).__inputGuardsCleanup as (() => void) | undefined;
+    cleanupGuards?.();
     currentInputBox.remove();
     currentInputBox = null;
+    currentPromptInput = null;
   }
-  document.removeEventListener('click', handleDocumentClickForInputBox);
-  document.removeEventListener('keydown', handleEscapeForInputBox);
-}
 
-function handleDocumentClickForInputBox(e: MouseEvent) {
-  if (currentInputBox && !currentInputBox.shadowRoot?.contains(e.target as Node)) {
-    dismissInputBox();
-  }
+  document.removeEventListener('keydown', handleEscapeForInputBox);
 }
 
 function handleEscapeForInputBox(e: KeyboardEvent) {

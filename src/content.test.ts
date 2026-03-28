@@ -75,12 +75,13 @@ describe('Content Script Toasts', () => {
     expect(container).not.toBeNull();
     const shadowRoot = container!.shadowRoot;
     expect(shadowRoot).not.toBeNull();
-    const copyBtn = shadowRoot.querySelector('.copy-btn');
+    const safeShadowRoot = shadowRoot!;
+    const copyBtn = safeShadowRoot.querySelector('.copy-btn');
     expect(copyBtn).not.toBeNull();
     copyBtn!.dispatchEvent(new window.Event('click'));
 
     // 3. Dismiss the toast immediately
-    const closeBtn = shadowRoot.querySelector('.close-btn');
+    const closeBtn = safeShadowRoot.querySelector('.close-btn');
     expect(closeBtn).not.toBeNull();
     closeBtn!.dispatchEvent(new window.Event('click'));
 
