@@ -1,0 +1,68 @@
+.ask-llm-capture-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  cursor: crosshair;
+  background: rgba(15, 23, 42, 0.12);
+  backdrop-filter: saturate(110%) blur(1px);
+  user-select: none;
+}
+
+.capture-hint {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font: 500 13px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+}
+
+.capture-selection {
+  position: fixed;
+  border: 2px solid #2563eb;
+  background: rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.2);
+}
+
+.capture-actions {
+  position: fixed;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+}
+
+.capture-btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  cursor: pointer;
+}
+
+.capture-btn.primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.capture-btn.secondary {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.capture-btn:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.hidden {
+  display: none;
+}

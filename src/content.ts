@@ -1,10 +1,19 @@
-import type { ToastOptions } from './types';
+import { getScaledDimensions, scaleRegionToImage } from './capture-utils';
+import type {
+  CaptureBounds,
+  CaptureViewport,
+  ImageAttachment,
+  ShowInputBoxPayload,
+  ToastOptions,
+} from './types';
 
 // --- STATE ---
 let currentToast: HTMLDivElement | null = null;
 let toastTimeout: number | null = null;
 let copyTimeout: number | null = null;
 let currentInputBox: HTMLDivElement | null = null;
+let currentCaptureOverlay: HTMLDivElement | null = null;
+let currentPromptInput: HTMLTextAreaElement | null = null;
 
 // --- EVENT LISTENERS ---
 
@@ -18,7 +27,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'SHOW_INPUT_BOX') {
-    showInputBox(message.payload.selectionText);
+    showInputBox(message.payload);
+    sendResponse({ success: true });
+    return false;
+  }
+
+  if (message.type === 'START_REGION_SELECTION') {
+    showRegionSelector();
     sendResponse({ success: true });
     return false;
   }
@@ -34,8 +49,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // --- INPUT BOX IMPLEMENTATION ---
 
-function showInputBox(selectionText: string) {
+function showInputBox(payload: string | ShowInputBoxPayload) {
   dismissInputBox(); // Ensure no other box is open
+
+  const { selectionText, imageAttachment } = typeof payload === 'string'
+    ? { selectionText: payload, imageAttachment: undefined }
+    : payload;
 
   const container = document.createElement('div');
   container.id = 'ask-llm-input-container';
@@ -48,19 +67,77 @@ function showInputBox(selectionText: string) {
   styleLink.href = chrome.runtime.getURL('styles/input-box.css');
   shadowRoot.appendChild(styleLink);
 
+  const modal = document.createElement('div');
+  modal.className = 'ask-llm-input-modal';
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'ask-llm-input-backdrop';
+
   const inputBox = document.createElement('div');
   inputBox.className = 'ask-llm-input-box-container';
+  inputBox.setAttribute('role', 'dialog');
+  inputBox.setAttribute('aria-modal', 'true');
 
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.placeholder = 'Your prompt... (Press Enter to submit)';
+  const header = document.createElement('div');
+  header.className = 'input-box-header';
+  header.textContent = imageAttachment ? 'Prompt with captured image' : 'Prompt';
 
-  const helpText = document.createElement('p');
-  helpText.textContent = 'Press Esc or click away to cancel.';
+  const input = document.createElement('textarea');
+  input.rows = imageAttachment ? 3 : 2;
+  input.placeholder = 'Your prompt... (Press Ctrl+Enter to submit)';
+  currentPromptInput = input;
+
+  let pendingImage = imageAttachment;
+
+  if (pendingImage) {
+    const preview = document.createElement('div');
+    preview.className = 'capture-preview';
+
+    const previewImage = document.createElement('img');
+    previewImage.src = pendingImage.dataUrl;
+    previewImage.alt = 'Captured region preview';
+
+    const previewMeta = document.createElement('div');
+    previewMeta.className = 'capture-preview-meta';
+    previewMeta.textContent = `${pendingImage.width}×${pendingImage.height} captured region`;
+
+    const clearButton = document.createElement('button');
+    clearButton.type = 'button';
+    clearButton.className = 'capture-clear-btn';
+    clearButton.textContent = 'Remove image';
+    clearButton.addEventListener('click', () => {
+      pendingImage = undefined;
+      preview.remove();
+      header.textContent = 'Prompt';
+      input.rows = 2;
+    });
+
+    preview.appendChild(previewImage);
+    preview.appendChild(previewMeta);
+    preview.appendChild(clearButton);
+    inputBox.appendChild(header);
+    inputBox.appendChild(preview);
+  } else {
+    inputBox.appendChild(header);
+  }
+
+  const submitPrompt = () => {
+    const userPrompt = input.value.trim();
+    if (!userPrompt) {
+      return;
+    }
+
+    chrome.runtime.sendMessage({
+      type: 'EXECUTE_PROMPT_REQUEST',
+      payload: { selectionText, prompt: userPrompt, imageAttachment: pendingImage },
+    });
+    dismissInputBox();
+  };
 
   inputBox.appendChild(input);
-  inputBox.appendChild(helpText);
-  shadowRoot.appendChild(inputBox);
+  modal.appendChild(backdrop);
+  modal.appendChild(inputBox);
+  shadowRoot.appendChild(modal);
   
   // Position the box.
   const selection = window.getSelection();
@@ -109,49 +186,393 @@ function showInputBox(selectionText: string) {
 
   // Handle submission
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    e.stopPropagation();
+    if (e.key === 'Escape') {
       e.preventDefault();
-      const userPrompt = input.value.trim();
-      if (userPrompt) {
-        chrome.runtime.sendMessage({
-          type: 'EXECUTE_MANUAL_PROMPT',
-          payload: { selectionText, prompt: userPrompt },
-        });
+      dismissInputBox();
+      return;
+    }
+
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      submitPrompt();
+    }
+  });
+
+  input.addEventListener('keyup', (e) => {
+    e.stopPropagation();
+  });
+
+  input.addEventListener('keypress', (e) => {
+    e.stopPropagation();
+  });
+
+  inputBox.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  backdrop.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    input.focus({ preventScroll: true });
+  });
+
+  const focusTrap = (e: FocusEvent) => {
+    if (!currentInputBox || !currentPromptInput) {
+      return;
+    }
+
+    if (isEventFromInputModal(e)) {
+      return;
+    }
+
+    e.stopPropagation();
+    currentPromptInput.focus({ preventScroll: true });
+  };
+
+  const pageKeyGuard = (e: KeyboardEvent) => {
+    if (!currentInputBox) {
+      return;
+    }
+
+    if (!isEventFromInputModal(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === 'Escape') {
         dismissInputBox();
       }
     }
-  });
+  };
+
+  const stopPointerFromPage = (e: MouseEvent) => {
+    if (!currentInputBox) {
+      return;
+    }
+
+    if (!isEventFromInputModal(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      currentPromptInput?.focus({ preventScroll: true });
+    }
+  };
+
+  const cleanupGuards = () => {
+    document.removeEventListener('focusin', focusTrap, true);
+    document.removeEventListener('keydown', pageKeyGuard, true);
+    document.removeEventListener('mousedown', stopPointerFromPage, true);
+  };
+
+  (container as any).__inputGuardsCleanup = cleanupGuards;
+
+  document.addEventListener('focusin', focusTrap, true);
+  document.addEventListener('keydown', pageKeyGuard, true);
+  document.addEventListener('mousedown', stopPointerFromPage, true);
 
   // Handle dismissal via Escape key
   document.addEventListener('keydown', handleEscapeForInputBox);
 
-  // Handle dismissal via click outside
-  setTimeout(() => {
-    document.addEventListener('click', handleDocumentClickForInputBox);
-  }, 0);
-
   input.focus({preventScroll: true});
+}
+
+function isEventFromInputModal(event: Event): boolean {
+  if (!currentInputBox) {
+    return false;
+  }
+
+  const path = event.composedPath();
+  const shadowRoot = currentInputBox.shadowRoot;
+
+  return path.some((node) => {
+    if (!(node instanceof Node)) {
+      return false;
+    }
+
+    if (node === currentInputBox) {
+      return true;
+    }
+
+    return Boolean(shadowRoot?.contains(node));
+  });
 }
 
 function dismissInputBox() {
   if (currentInputBox) {
+    const cleanupGuards = (currentInputBox as any).__inputGuardsCleanup as (() => void) | undefined;
+    cleanupGuards?.();
     currentInputBox.remove();
     currentInputBox = null;
+    currentPromptInput = null;
   }
-  document.removeEventListener('click', handleDocumentClickForInputBox);
-  document.removeEventListener('keydown', handleEscapeForInputBox);
-}
 
-function handleDocumentClickForInputBox(e: MouseEvent) {
-  if (currentInputBox && !currentInputBox.shadowRoot?.contains(e.target as Node)) {
-    dismissInputBox();
-  }
+  document.removeEventListener('keydown', handleEscapeForInputBox);
 }
 
 function handleEscapeForInputBox(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     dismissInputBox();
   }
+}
+
+// --- CAPTURE IMPLEMENTATION ---
+
+function showRegionSelector() {
+  dismissCaptureOverlay();
+  dismissInputBox();
+
+  const container = document.createElement('div');
+  container.id = 'ask-llm-capture-container';
+  document.body.appendChild(container);
+
+  const shadowRoot = container.attachShadow({ mode: 'open' });
+
+  const styleLink = document.createElement('link');
+  styleLink.rel = 'stylesheet';
+  styleLink.href = chrome.runtime.getURL('styles/capture-overlay.css');
+  shadowRoot.appendChild(styleLink);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'ask-llm-capture-overlay';
+
+  const hint = document.createElement('div');
+  hint.className = 'capture-hint';
+  hint.textContent = 'Drag to select a region. Esc cancels.';
+
+  const selection = document.createElement('div');
+  selection.className = 'capture-selection hidden';
+
+  const actions = document.createElement('div');
+  actions.className = 'capture-actions hidden';
+
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.className = 'capture-btn secondary';
+  cancelButton.textContent = 'Cancel';
+
+  const confirmButton = document.createElement('button');
+  confirmButton.type = 'button';
+  confirmButton.className = 'capture-btn primary';
+  confirmButton.textContent = 'Use capture';
+
+  actions.appendChild(cancelButton);
+  actions.appendChild(confirmButton);
+  overlay.appendChild(hint);
+  overlay.appendChild(selection);
+  overlay.appendChild(actions);
+  shadowRoot.appendChild(overlay);
+
+  currentCaptureOverlay = container;
+
+  let dragging = false;
+  let startX = 0;
+  let startY = 0;
+  let selectedBounds: CaptureBounds | null = null;
+
+  const updateSelectionBox = (bounds: CaptureBounds) => {
+    selection.classList.remove('hidden');
+    selection.style.left = `${bounds.x}px`;
+    selection.style.top = `${bounds.y}px`;
+    selection.style.width = `${bounds.width}px`;
+    selection.style.height = `${bounds.height}px`;
+  };
+
+  const updateActionPosition = (bounds: CaptureBounds) => {
+    actions.classList.remove('hidden');
+    const top = Math.min(window.innerHeight - 56, bounds.y + bounds.height + 12);
+    const left = Math.min(window.innerWidth - 170, Math.max(16, bounds.x));
+    actions.style.top = `${top}px`;
+    actions.style.left = `${left}px`;
+  };
+
+  const finalizeSelection = (bounds: CaptureBounds) => {
+    if (bounds.width < 12 || bounds.height < 12) {
+      selectedBounds = null;
+      selection.classList.add('hidden');
+      actions.classList.add('hidden');
+      return;
+    }
+
+    selectedBounds = bounds;
+    updateSelectionBox(bounds);
+    updateActionPosition(bounds);
+    hint.textContent = 'Confirm the crop or drag again to replace it.';
+  };
+
+  const handlePointerDown = (event: MouseEvent) => {
+    const target = event.target as Node;
+    if (actions.contains(target)) {
+      return;
+    }
+
+    event.preventDefault();
+    dragging = true;
+    startX = event.clientX;
+    startY = event.clientY;
+    actions.classList.add('hidden');
+    selectedBounds = null;
+    updateSelectionBox({ x: startX, y: startY, width: 0, height: 0 });
+  };
+
+  const handlePointerMove = (event: MouseEvent) => {
+    if (!dragging) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const x = Math.min(startX, event.clientX);
+    const y = Math.min(startY, event.clientY);
+    const width = Math.abs(event.clientX - startX);
+    const height = Math.abs(event.clientY - startY);
+    updateSelectionBox({ x, y, width, height });
+  };
+
+  const handlePointerUp = (event: MouseEvent) => {
+    if (!dragging) {
+      return;
+    }
+
+    dragging = false;
+    const x = Math.min(startX, event.clientX);
+    const y = Math.min(startY, event.clientY);
+    const width = Math.abs(event.clientX - startX);
+    const height = Math.abs(event.clientY - startY);
+    finalizeSelection({ x, y, width, height });
+  };
+
+  overlay.addEventListener('mousedown', handlePointerDown);
+  overlay.addEventListener('mousemove', handlePointerMove);
+  overlay.addEventListener('mouseup', handlePointerUp);
+  overlay.addEventListener('mouseleave', handlePointerUp);
+
+  cancelButton.addEventListener('click', () => {
+    dismissCaptureOverlay();
+  });
+
+  confirmButton.addEventListener('click', async () => {
+    if (!selectedBounds) {
+      return;
+    }
+
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Capturing...';
+
+    try {
+      const imageAttachment = await captureSelectedRegion(selectedBounds);
+      dismissCaptureOverlay();
+
+      const result = await chrome.storage.local.get('settings');
+      const promptMode = result.settings?.promptMode || 'auto';
+
+      if (promptMode === 'manual') {
+        showInputBox({ selectionText: '', imageAttachment });
+      } else {
+        await chrome.runtime.sendMessage({
+          type: 'EXECUTE_PROMPT_REQUEST',
+          payload: { selectionText: '', imageAttachment },
+        });
+      }
+    } catch (error) {
+      confirmButton.disabled = false;
+      confirmButton.textContent = 'Use capture';
+      await showToast({
+        message: `Capture failed: ${String(error)}`,
+        type: 'error',
+      });
+    }
+  });
+
+  document.addEventListener('keydown', handleEscapeForCapture);
+}
+
+function dismissCaptureOverlay() {
+  if (currentCaptureOverlay) {
+    currentCaptureOverlay.remove();
+    currentCaptureOverlay = null;
+  }
+
+  document.removeEventListener('keydown', handleEscapeForCapture);
+}
+
+function handleEscapeForCapture(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    dismissCaptureOverlay();
+  }
+}
+
+async function captureSelectedRegion(bounds: CaptureBounds): Promise<ImageAttachment> {
+  const response = await chrome.runtime.sendMessage({ type: 'CAPTURE_VISIBLE_TAB' });
+
+  if (!response?.success || !response.dataUrl) {
+    throw new Error(response?.error || 'Unable to capture the current tab.');
+  }
+
+  const viewport: CaptureViewport = {
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight,
+    devicePixelRatio: window.devicePixelRatio || 1,
+  };
+
+  return cropCapturedImage(response.dataUrl, bounds, viewport);
+}
+
+async function cropCapturedImage(
+  captureDataUrl: string,
+  bounds: CaptureBounds,
+  viewport: CaptureViewport,
+): Promise<ImageAttachment> {
+  const image = await loadImage(captureDataUrl);
+  const pixelBounds = scaleRegionToImage(
+    bounds,
+    viewport,
+    image.naturalWidth || image.width,
+    image.naturalHeight || image.height,
+  );
+
+  const scaledDimensions = getScaledDimensions(pixelBounds.width, pixelBounds.height, 1600);
+  const canvas = document.createElement('canvas');
+  canvas.width = scaledDimensions.width;
+  canvas.height = scaledDimensions.height;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Canvas is unavailable on this page.');
+  }
+
+  context.drawImage(
+    image,
+    pixelBounds.x,
+    pixelBounds.y,
+    pixelBounds.width,
+    pixelBounds.height,
+    0,
+    0,
+    scaledDimensions.width,
+    scaledDimensions.height,
+  );
+
+  const mimeType = 'image/jpeg';
+  const dataUrl = canvas.toDataURL(mimeType, 0.9);
+
+  if (dataUrl.length > 3_500_000) {
+    throw new Error('The cropped image is too large. Try selecting a smaller region.');
+  }
+
+  return {
+    dataUrl,
+    mimeType,
+    width: scaledDimensions.width,
+    height: scaledDimensions.height,
+    source: 'capture',
+  };
+}
+
+function loadImage(dataUrl: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Unable to read the captured image.'));
+    image.src = dataUrl;
+  });
 }
 
 // --- TOAST IMPLEMENTATION ---
