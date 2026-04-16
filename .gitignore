@@ -19,6 +19,7 @@ dist/
 .idea/
 *.swp
 *.swo
+.cursor/skills/
 
 # OS files
 .DS_Store
