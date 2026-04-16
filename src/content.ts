@@ -674,10 +674,9 @@ function createToast(options: ToastOptions, position: 'bottom-left' | 'bottom-ri
       border-radius: 999px;
       font-size: 12px;
       font-weight: 600;
-      transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms linear;
-      will-change: transform;
+      transition: border-color 120ms linear, background-color 120ms linear;
     }
-    .toast-btn:hover { border-color: var(--toast-border); transform: translateY(-1px); opacity: 0.95; }
+    .toast-btn:hover { border-color: var(--toast-border); background: color-mix(in oklab, var(--toast-surface) 82%, transparent); }
     .toast-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in oklab, var(--toast-brand) 28%, transparent); }
     .close-btn { color: var(--toast-muted); }
     .copy-btn { color: var(--toast-brand); }

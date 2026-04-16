@@ -145,14 +145,13 @@ body {
   border-radius: var(--radius-md);
   padding: 8px 10px;
   background: color-mix(in oklab, var(--bg-elevated) 92%, var(--bg-muted) 8%);
-  transition: transform 120ms var(--ease-smooth), opacity 120ms linear;
+  transition: border-color 120ms linear, background-color 120ms linear, opacity 120ms linear;
   cursor: pointer;
-  will-change: transform;
 }
 
 .radio-group label:hover {
   border-color: var(--brand);
-  transform: translateY(-1px);
+  background: color-mix(in oklab, var(--bg-elevated) 84%, var(--bg-muted) 16%);
   opacity: 0.96;
 }
 
@@ -233,14 +232,12 @@ textarea:focus {
   padding: 11px 12px;
   font: 600 13px var(--font-display);
   cursor: pointer;
-  transition: transform 120ms var(--ease-smooth), opacity 120ms linear;
-  will-change: transform;
+  transition: border-color 120ms linear, background-color 120ms linear;
 }
 
 .btn-secondary:hover {
   border-color: var(--brand);
-  transform: translateY(-1px);
-  opacity: 0.96;
+  background: color-mix(in oklab, var(--bg-elevated) 84%, var(--bg-muted) 16%);
 }
 
 .btn-secondary:focus-visible {

@@ -74,8 +74,7 @@
   padding: 8px 13px;
   font: 600 12px/1 "IBM Plex Sans", "Segoe UI", sans-serif;
   cursor: pointer;
-  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms linear;
-  will-change: transform;
+  transition: border-color 120ms linear, background-color 120ms linear;
 }
 
 .capture-btn.primary {
@@ -90,8 +89,8 @@
 }
 
 .capture-btn:hover {
-  transform: translateY(-1px);
-  opacity: 0.95;
+  border-color: var(--co-primary);
+  background: color-mix(in oklab, var(--co-card) 82%, var(--co-primary) 18%);
 }
 
 .capture-btn:disabled {

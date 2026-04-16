@@ -96,7 +96,7 @@ select {
   font-size: 14px;
   background: color-mix(in oklab, var(--bg-elevated) 90%, var(--bg-muted) 10%);
   color: var(--text);
-  transition: border-color var(--motion-fast), box-shadow var(--motion-fast), transform var(--motion-fast);
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast), background-color var(--motion-fast);
 }
 
 input:focus,
@@ -105,7 +105,7 @@ select:focus {
   outline: none;
   border-color: var(--brand);
   box-shadow: var(--focus-ring);
-  transform: translateY(-1px);
+  background: color-mix(in oklab, var(--bg-elevated) 86%, var(--bg-muted) 14%);
 }
 
 small {
@@ -210,8 +210,7 @@ input[type="range"] {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 120ms var(--ease-smooth), opacity 120ms linear;
-  will-change: transform;
+  transition: border-color 120ms linear, background-color 120ms linear;
 }
 
 .btn-primary {
@@ -223,8 +222,7 @@ input[type="range"] {
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  opacity: 0.96;
+  background: color-mix(in oklab, var(--brand) 90%, #ffffff 10%);
 }
 
 .btn-secondary {
@@ -235,8 +233,7 @@ input[type="range"] {
 
 .btn-secondary:hover {
   border-color: var(--brand);
-  transform: translateY(-1px);
-  opacity: 0.96;
+  background: color-mix(in oklab, var(--bg-elevated) 84%, var(--bg-muted) 16%);
 }
 
 .btn-primary:focus-visible,
@@ -299,16 +296,14 @@ input[type="range"] {
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 120ms var(--ease-smooth), opacity 120ms linear;
+  transition: border-color 120ms linear, background-color 120ms linear;
   padding: 0;
   flex-shrink: 0;
-  will-change: transform;
 }
 
 .btn-icon:hover {
   border-color: var(--brand);
-  transform: translateY(-1px);
-  opacity: 0.96;
+  background: color-mix(in oklab, var(--bg-elevated) 76%, var(--bg-muted) 24%);
 }
 
 .radio-group {
@@ -325,14 +320,13 @@ input[type="range"] {
   padding: 10px 12px;
   margin-bottom: 0;
   background: color-mix(in oklab, var(--bg-elevated) 90%, var(--bg-muted) 10%);
-  transition: transform 120ms var(--ease-smooth), opacity 120ms linear;
+  transition: border-color 120ms linear, background-color 120ms linear, opacity 120ms linear;
   cursor: pointer;
-  will-change: transform;
 }
 
 .radio-group label:hover {
   border-color: var(--brand);
-  transform: translateY(-1px);
+  background: color-mix(in oklab, var(--bg-elevated) 84%, var(--bg-muted) 16%);
   opacity: 0.96;
 }
 
