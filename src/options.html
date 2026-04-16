@@ -4,20 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ask LLM - Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/options.css">
 </head>
 <body>
-  <div class="container">
+  <div class="options-shell">
+    <div class="ambient-glow" aria-hidden="true"></div>
+    <div class="container">
     <header>
       <h1>Ask LLM Settings</h1>
-      <p>Configure your OpenRouter API key</p>
+      <p>Configure provider, behavior, and display preferences in one place.</p>
     </header>
 
     <form id="settingsForm">
-      <section class="section">
+      <section class="section section-api">
         <h2>API Configuration</h2>
         
-        <div class="form-group">
+        <div class="form-group form-group-inline">
           <label for="provider">Provider</label>
           <select id="provider" name="provider">
             <option value="openrouter">OpenRouter</option>
@@ -164,6 +170,7 @@
 
       <div class="status" id="status"></div>
     </form>
+    </div>
   </div>
   <script type="module" src="./options.ts"></script>
 </body>

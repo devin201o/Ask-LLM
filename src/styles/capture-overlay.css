@@ -3,9 +3,33 @@
   inset: 0;
   z-index: 2147483647;
   cursor: crosshair;
-  background: rgba(15, 23, 42, 0.12);
-  backdrop-filter: saturate(110%) blur(1px);
+  --co-bg: rgba(15, 23, 42, 0.28);
+  --co-card: rgba(255, 255, 255, 0.9);
+  --co-text: #0f172a;
+  --co-border: rgba(15, 23, 42, 0.18);
+  --co-selection: #2563eb;
+  --co-selection-fill: rgba(37, 99, 235, 0.18);
+  --co-hint-bg: rgba(15, 23, 42, 0.88);
+  --co-hint-text: #f8fafc;
+  --co-primary: #2563eb;
+  --co-shadow: 0 14px 30px rgba(2, 6, 23, 0.3);
+  background: radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.14), transparent 45%), var(--co-bg);
+  backdrop-filter: saturate(118%) blur(2px);
   user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ask-llm-capture-overlay {
+    --co-card: rgba(15, 23, 42, 0.92);
+    --co-text: #dbe5f4;
+    --co-border: rgba(148, 163, 184, 0.28);
+    --co-selection: #60a5fa;
+    --co-selection-fill: rgba(96, 165, 250, 0.22);
+    --co-hint-bg: rgba(2, 6, 23, 0.88);
+    --co-hint-text: #e2e8f0;
+    --co-primary: #60a5fa;
+    --co-shadow: 0 18px 32px rgba(2, 6, 23, 0.5);
+  }
 }
 
 .capture-hint {
@@ -13,20 +37,22 @@
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.92);
-  color: #f8fafc;
+  background: var(--co-hint-bg);
+  color: var(--co-hint-text);
   padding: 10px 14px;
   border-radius: 999px;
-  font: 500 13px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font: 600 13px/1.2 "IBM Plex Sans", "Segoe UI", sans-serif;
   letter-spacing: 0.01em;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+  box-shadow: var(--co-shadow);
+  animation: co-fade 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .capture-selection {
   position: fixed;
-  border: 2px solid #2563eb;
-  background: rgba(37, 99, 235, 0.15);
+  border: 2px solid var(--co-selection);
+  background: var(--co-selection-fill);
   box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.2);
+  border-radius: 8px;
 }
 
 .capture-actions {
@@ -35,27 +61,36 @@
   gap: 8px;
   padding: 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  border: 1px solid var(--co-border);
+  background: var(--co-card);
+  box-shadow: var(--co-shadow);
+  backdrop-filter: blur(10px);
+  animation: co-fade 170ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .capture-btn {
-  border: 1px solid transparent;
+  border: 1px solid var(--co-border);
   border-radius: 999px;
-  padding: 8px 12px;
-  font: 600 12px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 8px 13px;
+  font: 600 12px/1 "IBM Plex Sans", "Segoe UI", sans-serif;
   cursor: pointer;
+  transition: transform 140ms, filter 140ms, border-color 140ms;
 }
 
 .capture-btn.primary {
-  background: #2563eb;
+  background: var(--co-primary);
   color: #ffffff;
+  border-color: transparent;
 }
 
 .capture-btn.secondary {
-  background: #ffffff;
-  color: #0f172a;
-  border-color: #cbd5e1;
+  background: transparent;
+  color: var(--co-text);
+}
+
+.capture-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
 }
 
 .capture-btn:disabled {
@@ -65,4 +100,15 @@
 
 .hidden {
   display: none;
+}
+
+@keyframes co-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

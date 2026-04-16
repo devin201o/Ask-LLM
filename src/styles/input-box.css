@@ -2,43 +2,76 @@
   position: fixed;
   inset: 0;
   z-index: 2147483647;
+  --ib-bg: rgba(255, 255, 255, 0.9);
+  --ib-bg-muted: #eef3fb;
+  --ib-text: #0f172a;
+  --ib-text-muted: #516079;
+  --ib-border: rgba(15, 23, 42, 0.18);
+  --ib-shadow: 0 26px 50px rgba(15, 23, 42, 0.24);
+  --ib-brand: #2563eb;
+  --ib-focus: 0 0 0 3px rgba(37, 99, 235, 0.24);
+  --ib-success: #0f9f6e;
+  --ib-danger: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ask-llm-input-modal {
+    --ib-bg: rgba(15, 23, 42, 0.88);
+    --ib-bg-muted: #101a2f;
+    --ib-text: #e2e8f0;
+    --ib-text-muted: #9aaccc;
+    --ib-border: rgba(148, 163, 184, 0.26);
+    --ib-shadow: 0 30px 58px rgba(2, 6, 23, 0.58);
+    --ib-brand: #60a5fa;
+    --ib-focus: 0 0 0 3px rgba(96, 165, 250, 0.28);
+    --ib-success: #34d399;
+    --ib-danger: #f87171;
+  }
 }
 
 .ask-llm-input-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.08);
+  background: radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.12), transparent 46%), rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(2px);
 }
 
 .ask-llm-input-box-container {
   position: fixed;
   z-index: 1;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 8px;
-  width: 300px;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  background-color: var(--ib-bg);
+  border: 1px solid var(--ib-border);
+  border-radius: 16px;
+  box-shadow: var(--ib-shadow);
+  backdrop-filter: blur(14px);
+  padding: 10px;
+  width: 320px;
+  animation: ib-rise 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .input-box-header {
   font-size: 12px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 6px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ib-text-muted);
+  margin-bottom: 8px;
 }
 
 .ask-llm-input-box-container textarea {
   width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 8px;
+  border: 1px solid var(--ib-border);
+  border-radius: 10px;
+  padding: 10px;
   font-size: 14px;
   box-sizing: border-box;
   resize: vertical;
-  min-height: 56px;
+  min-height: 62px;
   font-family: inherit;
+  background: var(--ib-bg-muted);
+  color: var(--ib-text);
+  transition: border-color 140ms, box-shadow 140ms;
 }
 
 .input-box-actions {
@@ -57,24 +90,24 @@
 }
 
 .input-action-btn.primary {
-  background: #2563eb;
+  background: var(--ib-brand);
   color: #ffffff;
 }
 
 .input-action-btn.secondary {
-  background: #ffffff;
-  color: #1f2937;
-  border-color: #d1d5db;
+  background: var(--ib-bg-muted);
+  color: var(--ib-text);
+  border-color: var(--ib-border);
 }
 
 .input-action-btn:hover {
-  filter: brightness(0.97);
+  filter: brightness(0.95);
 }
 
 .ask-llm-input-box-container textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+  border-color: var(--ib-brand);
+  box-shadow: var(--ib-focus);
 }
 
 .capture-preview {
@@ -88,32 +121,45 @@
   width: 100%;
   max-height: 140px;
   object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  border: 1px solid var(--ib-border);
 }
 
 .capture-preview-meta {
   font-size: 11px;
-  color: #4b5563;
+  color: var(--ib-text-muted);
 }
 
 .capture-clear-btn {
   justify-self: start;
-  background: #f3f4f6;
-  color: #111827;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
+  background: var(--ib-bg-muted);
+  color: var(--ib-text);
+  border: 1px solid var(--ib-border);
+  border-radius: 999px;
   padding: 4px 8px;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
+  transition: border-color 140ms;
 }
 
 .capture-clear-btn:hover {
-  background: #e5e7eb;
+  border-color: var(--ib-brand);
 }
 
 .ask-llm-input-box-container p {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--ib-text-muted);
   margin: 4px 0 0 2px;
+}
+
+@keyframes ib-rise {
+  from {
+    transform: translateY(8px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }

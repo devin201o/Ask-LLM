@@ -4,52 +4,65 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ask LLM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/popup.css">
 </head>
 <body>
-  <div class="popup-container">
-    <h1>Ask LLM</h1>
-    
-    <div class="toggle-section">
-      <label class="toggle-label">
-        <input type="checkbox" id="enabledToggle" />
-        <span class="toggle-slider"></span>
-        <span class="toggle-text">Extension Enabled</span>
-      </label>
-    </div>
+  <div class="popup-shell">
+    <div class="ambient-glow" aria-hidden="true"></div>
+    <div class="popup-container">
+      <header class="popup-header">
+        <h1>Ask LLM</h1>
+        <p>Fast context-aware assistant for highlighted text and captures.</p>
+      </header>
 
-    <div class="divider"></div>
+      <section class="surface-card toggle-section">
+        <label class="toggle-label">
+          <input type="checkbox" id="enabledToggle" />
+          <span class="toggle-slider"></span>
+          <span class="toggle-text-wrap">
+            <span class="toggle-text">Extension Enabled</span>
+            <span class="toggle-hint">Turn quick actions on or off globally.</span>
+          </span>
+        </label>
+      </section>
 
-    <div class="prompt-mode-section">
-      <div class="radio-group">
-        <label>
-          <input type="radio" name="promptMode" value="auto" checked>
-          Auto
-        </label>
-        <label>
-          <input type="radio" name="promptMode" value="manual">
-          Manual
-        </label>
-        <label>
-          <input type="radio" name="promptMode" value="custom">
-          Custom
-        </label>
+      <section class="surface-card prompt-mode-section">
+        <div class="section-title">Prompt Mode</div>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="promptMode" value="auto" checked>
+            <span>Auto</span>
+          </label>
+          <label>
+            <input type="radio" name="promptMode" value="manual">
+            <span>Manual</span>
+          </label>
+          <label>
+            <input type="radio" name="promptMode" value="custom">
+            <span>Custom</span>
+          </label>
+        </div>
+        <div id="customPromptContainer" class="custom-prompt-container" style="display: none;">
+          <label for="customPrompt">Custom Prompt</label>
+          <textarea id="customPrompt" placeholder="Enter your custom prompt..."></textarea>
+        </div>
+      </section>
+
+      <div class="status" id="status"></div>
+
+      <div class="actions">
+        <button id="openOptions" class="btn-secondary">Open Settings</button>
       </div>
-      <div id="customPromptContainer" class="custom-prompt-container" style="display: none;">
-        <textarea id="customPrompt" placeholder="Enter your custom prompt..."></textarea>
-      </div>
-    </div>
 
-    <div class="status" id="status"></div>
-
-    <div class="actions">
-      <button id="openOptions" class="btn-secondary">Settings</button>
-    </div>
-
-    <div class="footer">
-      <p>Highlight text and right-click to ask your LLM</p>
-      <p class="shortcut">Shortcut: <kbd>Ctrl+Shift+Space</kbd></p>
-      <p class="shortcut">Capture: <kbd>Ctrl+Shift+Y</kbd> with a vision-capable model</p>
+      <footer class="footer">
+        <p>Highlight text and right-click to ask your LLM.</p>
+        <p class="shortcut">Shortcut <kbd>Ctrl+Shift+Space</kbd></p>
+        <p class="shortcut">Capture <kbd>Ctrl+Shift+Y</kbd> (vision model required)</p>
+      </footer>
     </div>
   </div>
   <script type="module" src="./popup.ts"></script>
