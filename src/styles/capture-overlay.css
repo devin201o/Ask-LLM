@@ -13,7 +13,7 @@
   --co-hint-text: #f8fafc;
   --co-primary: #2563eb;
   --co-shadow: 0 14px 30px rgba(2, 6, 23, 0.3);
-  background: radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.14), transparent 45%), var(--co-bg);
+  background: var(--co-bg);
   backdrop-filter: saturate(118%) blur(2px);
   user-select: none;
 }
@@ -74,7 +74,8 @@
   padding: 8px 13px;
   font: 600 12px/1 "IBM Plex Sans", "Segoe UI", sans-serif;
   cursor: pointer;
-  transition: transform 140ms, filter 140ms, border-color 140ms;
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms linear;
+  will-change: transform;
 }
 
 .capture-btn.primary {
@@ -90,7 +91,7 @@
 
 .capture-btn:hover {
   transform: translateY(-1px);
-  filter: brightness(0.95);
+  opacity: 0.95;
 }
 
 .capture-btn:disabled {
