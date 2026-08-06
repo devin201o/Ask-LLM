@@ -5,12 +5,27 @@ import { buildChatCompletionRequest } from './request-builder';
 const CONTEXT_MENU_ID = 'ask-llm';
 const CAPTURE_CONTEXT_MENU_ID = 'ask-llm-capture';
 
+// --- STATE ---
+let cachedSettings: ExtensionSettings = DEFAULT_SETTINGS;
+
+function getSettings(): ExtensionSettings {
+  return cachedSettings;
+}
+
 // --- INITIALIZATION ---
-chrome.runtime.onInstalled.addListener(async () => {
+async function initialize() {
   const result = await chrome.storage.local.get('settings');
-  if (!result.settings) {
+  if (result.settings) {
+    cachedSettings = { ...DEFAULT_SETTINGS, ...result.settings };
+  } else {
     await chrome.storage.local.set({ settings: DEFAULT_SETTINGS });
   }
+}
+
+const initPromise = initialize();
+
+chrome.runtime.onInstalled.addListener(async () => {
+  await initPromise;
   await updateContextMenu();
 });
 
@@ -68,7 +83,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
-  const currentSettings = await getCurrentSettings();
+  await initPromise;
+  const currentSettings = getSettings();
 
   if (!(await ensureApiKey(currentSettings, tab.id))) {
     return;
@@ -109,7 +125,8 @@ chrome.commands.onCommand.addListener(async (command) => {
     return;
   }
 
-  const currentSettings = await getCurrentSettings();
+  await initPromise;
+  const currentSettings = getSettings();
 
   if (!(await ensureApiKey(currentSettings, tab.id))) {
     return;
@@ -165,6 +182,7 @@ chrome.commands.onCommand.addListener(async (command) => {
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === 'local' && changes.settings) {
+    cachedSettings = { ...DEFAULT_SETTINGS, ...changes.settings.newValue };
     updateContextMenu();
   }
 });
@@ -176,7 +194,8 @@ async function processLLMRequest(
   manualPrompt?: string,
   imageAttachment?: ImageAttachment,
 ) {
-  const currentSettings = await getCurrentSettings();
+  await initPromise;
+  const currentSettings = getSettings();
 
   const isReady = await ensureContentScript(tabId);
   if (!isReady) {
@@ -243,8 +262,8 @@ async function callLLM(
 
 // --- HELPERS ---
 async function updateContextMenu() {
-  const { settings } = await chrome.storage.local.get('settings');
-  const enabled = settings?.enabled ?? DEFAULT_SETTINGS.enabled;
+  await initPromise;
+  const enabled = cachedSettings.enabled;
 
   await chrome.contextMenus.removeAll();
 
@@ -261,11 +280,6 @@ async function updateContextMenu() {
       contexts: ['all'],
     });
   }
-}
-
-async function getCurrentSettings(): Promise<ExtensionSettings> {
-  const { settings } = await chrome.storage.local.get('settings');
-  return { ...DEFAULT_SETTINGS, ...(settings || {}) };
 }
 
 async function ensureApiKey(settings: ExtensionSettings, tabId: number) {

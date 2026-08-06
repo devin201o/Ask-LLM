@@ -1,19 +1,22 @@
 {
   "manifest_version": 3,
   "name": "Ask LLM",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Highlight text and ask your LLM via context menu",
   "permissions": [
     "contextMenus",
     "storage",
-    "activeTab"
+    "activeTab",
+    "scripting",
+    "notifications"
   ],
   "host_permissions": [
     "http://*/*",
     "https://*/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
@@ -37,12 +40,30 @@
     "128": "icons/icon128.png"
   },
   "commands": {
-    "toggle-extension": {
+    "run-ask-llm": {
       "suggested_key": {
-        "default": "Ctrl+Shift+L",
-        "mac": "Command+Shift+L"
+        "default": "Ctrl+Shift+Space",
+        "mac": "Command+Shift+Space"
       },
-      "description": "Toggle Ask LLM on/off"
+      "description": "Run Ask LLM on selected text"
+    },
+    "capture-ask-llm": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Capture a screen region and ask Ask LLM about it"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "styles/*",
+        "*.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
 }
